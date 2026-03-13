@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+
+echo "--- Running API unit tests ---"
+dotnet test "$REPO_ROOT/src/api/TaskGraph.sln" --nologo -v quiet
+echo "--- Running UI unit tests ---"
+(cd "$REPO_ROOT/src/ui" && npm run test)

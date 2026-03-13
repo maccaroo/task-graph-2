@@ -1,12 +1,12 @@
 # Tasks
 
 ## P1 - Project Foundation
-[ ] T1 - Initialise .NET solution and project structure under `src/api/`
-[ ] T2 - Initialise React app under `src/ui/`
-[ ] T3 - Configure PostgreSQL database and connection
-[ ] T4 - Configure Docker Compose for local dev (API, UI, PostgreSQL)
-[ ] T5 - Set up GitHub Actions CI pipeline (build + test on push/PR)
-[ ] T6 - Set up pre-commit git hook to run unit tests
+[x] T1 - Initialise .NET solution and project structure under `src/api/`
+[x] T2 - Initialise React app under `src/ui/`
+[x] T3 - Configure PostgreSQL database and connection
+[x] T4 - Configure Docker Compose for local dev (API, UI, PostgreSQL)
+[x] T5 - Set up GitHub Actions CI pipeline (build + test on push/PR)
+[x] T6 - Set up pre-commit git hook to run unit tests
 
 ## P2 - Database Schema & Migrations
 [ ] T1 - Create Users table (id, username, first_name, last_name, email, password_hash, avatar_url, configuration JSON)

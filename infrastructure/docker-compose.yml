@@ -1,0 +1,40 @@
+name: taskgraph
+
+services:
+  db:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: taskgraph
+      POSTGRES_USER: taskgraph
+      POSTGRES_PASSWORD: taskgraph
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ../src/api
+      dockerfile: TaskGraph.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Default: "Host=db;Port=5432;Database=taskgraph;Username=taskgraph;Password=taskgraph"
+    ports:
+      - "${API_PORT:-5000}:8080"
+    depends_on:
+      - db
+
+  ui:
+    build:
+      context: ../src/ui
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${UI_PORT:-3000}:80"
+    depends_on:
+      - api
+
+volumes:
+  db_data:
