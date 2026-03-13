@@ -37,6 +37,21 @@ export const DUE_STATUS_LABEL: Record<DueStatusKey, string> = {
   'completed': 'Completed',
 }
 
+/** Compute due status for an arbitrary date string (not the full task). */
+export function computeDueStatusForDate(dateStr: string, status: import('../services/tasks').TaskStatus): DueStatusKey {
+  if (status === 'Complete') return 'completed'
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const d = new Date(dateStr)
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const diffDays = Math.round((day.getTime() - today.getTime()) / 86_400_000)
+  if (diffDays < -7) return 'critical'
+  if (diffDays < 0)  return 'overdue'
+  if (diffDays === 0) return 'due-today'
+  if (diffDays <= 14) return 'due-soon'
+  return 'upcoming'
+}
+
 /** CSS custom property name for the status colour. */
 export const DUE_STATUS_COLOR_VAR: Record<DueStatusKey, string> = {
   'none':      'var(--color-status-none)',

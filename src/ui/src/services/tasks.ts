@@ -50,3 +50,11 @@ export async function createTask(data: CreateTaskData): Promise<Task> {
 export async function updateTaskPosition(id: string, position: { x: number; y: number }): Promise<void> {
   await api.put(`/tasks/${id}/position`, position)
 }
+
+export async function addPredecessor(taskId: string, predecessorId: string): Promise<void> {
+  await api.post(`/tasks/${taskId}/predecessors/${predecessorId}`)
+}
+
+export async function removePredecessor(taskId: string, predecessorId: string): Promise<void> {
+  await api.delete(`/tasks/${taskId}/predecessors/${predecessorId}`)
+}

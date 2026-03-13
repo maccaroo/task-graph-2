@@ -101,12 +101,12 @@
 [x] T12 - Toggle open-ended tasks visibility
 
 ## P14 - Task Item Component (Graph)
-[ ] T1 - Build task item card (title, status colour, time remaining/overdue)
-[ ] T2 - Show upstream dependency count + expandable list
-[ ] T3 - Show downstream dependent count + expandable list
-[ ] T4 - Predecessor drag widget — drag to create predecessor relationship
-[ ] T5 - Successor drag widget — drag to create successor relationship
-[ ] T6 - Apply hybrid gradient colour for tasks spanning multiple due-status periods
+[x] T1 - Build task item card (title, status colour, time remaining/overdue)
+[x] T2 - Show upstream dependency count + expandable list
+[x] T3 - Show downstream dependent count + expandable list
+[x] T4 - Predecessor drag widget — drag to create predecessor relationship
+[x] T5 - Successor drag widget — drag to create successor relationship
+[x] T6 - Apply hybrid gradient colour for tasks spanning multiple due-status periods
 
 ## P15 - Task Detail Panel
 [ ] T1 - Build collapsible Task Detail panel (right edge of graph view)

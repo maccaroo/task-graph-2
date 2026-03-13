@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeDueStatus } from './taskStatus'
+import { computeDueStatus, computeDueStatusForDate } from './taskStatus'
 import type { Task } from '../services/tasks'
 
 function task(overrides: Partial<Task> = {}): Task {
@@ -52,5 +52,33 @@ describe('computeDueStatus', () => {
 
   it('returns critical for > 7 days past', () => {
     expect(computeDueStatus(task({ endDate: isoOffset(-8) }))).toBe('critical')
+  })
+})
+
+describe('computeDueStatusForDate', () => {
+  it('returns completed for Complete status regardless of date', () => {
+    expect(computeDueStatusForDate(isoOffset(5), 'Complete')).toBe('completed')
+  })
+
+  it('returns critical for date > 7 days past', () => {
+    expect(computeDueStatusForDate(isoOffset(-10), 'Incomplete')).toBe('critical')
+  })
+
+  it('returns overdue for date 1–7 days past', () => {
+    expect(computeDueStatusForDate(isoOffset(-3), 'Incomplete')).toBe('overdue')
+  })
+
+  it('returns due-today for today', () => {
+    const today = new Date()
+    today.setHours(12, 0, 0, 0)
+    expect(computeDueStatusForDate(today.toISOString(), 'Incomplete')).toBe('due-today')
+  })
+
+  it('returns due-soon for 1–14 days ahead', () => {
+    expect(computeDueStatusForDate(isoOffset(7), 'Incomplete')).toBe('due-soon')
+  })
+
+  it('returns upcoming for > 14 days ahead', () => {
+    expect(computeDueStatusForDate(isoOffset(20), 'Incomplete')).toBe('upcoming')
   })
 })

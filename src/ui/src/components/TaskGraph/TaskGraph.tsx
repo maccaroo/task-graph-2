@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { getTasks, updateTaskPosition, type Task, type TaskPriority, type TaskStatus } from '../../services/tasks'
+import {
+  addPredecessor,
+  getTasks,
+  updateTaskPosition,
+  type Task,
+  type TaskPriority,
+  type TaskStatus,
+} from '../../services/tasks'
 import { getUsers, type UserSummary } from '../../services/users'
 import { computeDueStatus, DUE_STATUS_LABEL, type DueStatusKey } from '../../utils/taskStatus'
 import { Button } from '../ui'
 import { AddTaskModal } from '../TaskList/AddTaskModal'
 import { TimeAxis } from './TimeAxis'
-import { TaskGraphItem } from './TaskGraphItem'
+import { TaskGraphItem, type RelationDragType } from './TaskGraphItem'
 import {
   CANVAS_PAD_Y,
   CARD_HEIGHT,
@@ -20,7 +27,7 @@ import {
 } from './graphLayout'
 import styles from './TaskGraph.module.css'
 
-// ── Types ─────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────
 
 interface Filters {
   text: string
@@ -38,11 +45,18 @@ const DEFAULT_FILTERS: Filters = {
   completion: '', dueStatus: '', fromDate: '', toDate: '',
 }
 
-const MIN_ZOOM = 0.3   // px/day
-const MAX_ZOOM = 200   // px/day
+const MIN_ZOOM = 0.3
+const MAX_ZOOM = 200
 const DEFAULT_ZOOM = 40
 
-// ── Helpers ───────────────────────────────────────────────────────────────
+interface RelationDrag {
+  sourceId: string
+  type: RelationDragType
+  cursorX: number
+  cursorY: number
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
 
 function applyFilters(tasks: Task[], filters: Filters): Task[] {
   return tasks.filter(t => {
@@ -64,20 +78,31 @@ function applyFilters(tasks: Task[], filters: Filters): Task[] {
   })
 }
 
-// Get start-of-week (Monday) for a date
 function weekStart(d: Date): Date {
   const day = d.getDay()
-  const diff = (day === 0 ? -6 : 1 - day) // Mon=1 … Sun=0
+  const diff = day === 0 ? -6 : 1 - day
   const m = new Date(d)
   m.setDate(m.getDate() + diff)
   m.setHours(0, 0, 0, 0)
   return m
 }
 
-// ── Component ─────────────────────────────────────────────────────────────
+function wouldCreateCycle(taskMap: Map<string, Task>, newPredId: string, taskId: string): boolean {
+  const visited = new Set<string>()
+  function dfs(id: string): boolean {
+    if (id === newPredId) return true
+    if (visited.has(id)) return false
+    visited.add(id)
+    return (taskMap.get(id)?.successorIds ?? []).some(dfs)
+  }
+  return dfs(taskId)
+}
+
+// ── Component ──────────────────────────────────────────────────────────────
 
 export function TaskGraph() {
   const containerRef = useRef<HTMLDivElement>(null)
+
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -88,16 +113,22 @@ export function TaskGraph() {
   const [showOpenEnded, setShowOpenEnded] = useState(true)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  // pinnedPositions overrides auto-layout; values are absolute canvas coordinates
   const [pinnedPositions, setPinnedPositions] = useState<Map<string, { x: number; y: number }>>(new Map())
+
+  const [relationDrag, setRelationDrag] = useState<RelationDrag | null>(null)
+  const [dragTargetId, setDragTargetId] = useState<string | null>(null)
+  const dragTargetRef = useRef<string | null>(null)
+
+  const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
+  const tasksRef = useRef<Task[]>([])
 
   const load = useCallback(async () => {
     setError('')
     try {
       const [taskData, userData] = await Promise.all([getTasks(), getUsers()])
       setTasks(taskData)
+      tasksRef.current = taskData
       setUsers(userData)
-      // Restore server-saved pinned positions
       const serverPins = new Map<string, { x: number; y: number }>()
       for (const t of taskData) {
         if (t.pinnedPosition) serverPins.set(t.id, t.pinnedPosition)
@@ -112,14 +143,19 @@ export function TaskGraph() {
 
   useEffect(() => { load() }, [load])
 
-  // ── Derived data ────────────────────────────────────────────────────────
+  // ── Derived data ──────────────────────────────────────────────────────────
 
   const filtered = useMemo(() => {
     const f = applyFilters(tasks, filters)
     return showOpenEnded ? f : f.filter(t => t.endDate)
   }, [tasks, filters, showOpenEnded])
 
-  const { viewStart, viewEnd } = useMemo(() => computeViewRange(filtered.length ? filtered : tasks), [filtered, tasks])
+  const taskMap = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks])
+
+  const { viewStart, viewEnd } = useMemo(
+    () => computeViewRange(filtered.length ? filtered : tasks),
+    [filtered, tasks],
+  )
 
   const autoPositions = useMemo(
     () => computeAutoLayout(filtered, viewStart, pixelsPerDay),
@@ -137,7 +173,6 @@ export function TaskGraph() {
     [viewStart, viewEnd, pixelsPerDay, numRows],
   )
 
-  /** Final positions: pinned overrides auto */
   const positions = useMemo(() => {
     const map = new Map(autoPositions)
     for (const [id, pos] of pinnedPositions) {
@@ -146,73 +181,89 @@ export function TaskGraph() {
     return map
   }, [autoPositions, pinnedPositions])
 
+  useEffect(() => { positionsRef.current = positions }, [positions])
+
   const openEndedTasks = useMemo(() => filtered.filter(t => !t.endDate), [filtered])
-  const datedTasks = useMemo(() => filtered.filter(t => t.endDate), [filtered])
+  const datedTasks    = useMemo(() => filtered.filter(t =>  t.endDate), [filtered])
 
-  // Dates for decorative elements
   const nowX = useMemo(() => dateToX(new Date(), viewStart, pixelsPerDay), [viewStart, pixelsPerDay])
-  const weekBand = useMemo(() => {
-    const start = weekStart(new Date())
-    const end = new Date(start.getTime() + 7 * MS_PER_DAY)
-    return {
-      x: dateToX(start, viewStart, pixelsPerDay),
-      width: (7 * MS_PER_DAY / MS_PER_DAY) * pixelsPerDay,
-      endX: dateToX(end, viewStart, pixelsPerDay),
-    }
-  }, [viewStart, pixelsPerDay])
 
-  // Gap detection — sections of time axis with no tasks (>14 days between adjacent task dates)
+  const weekBand = useMemo(() => ({
+    x: dateToX(weekStart(new Date()), viewStart, pixelsPerDay),
+    width: 7 * pixelsPerDay,
+  }), [viewStart, pixelsPerDay])
+
   const gaps = useMemo(() => {
     const dates = datedTasks
       .flatMap(t => [t.startDate, t.endDate].filter(Boolean) as string[])
       .map(s => new Date(s).getTime())
       .sort((a, b) => a - b)
-
     const result: { x: number; width: number }[] = []
     for (let i = 1; i < dates.length; i++) {
-      const gapDays = (dates[i] - dates[i - 1]) / MS_PER_DAY
-      if (gapDays > 14) {
+      if ((dates[i] - dates[i - 1]) / MS_PER_DAY > 14) {
         result.push({
           x: dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay),
-          width: dateToX(new Date(dates[i]), viewStart, pixelsPerDay) - dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay),
+          width: dateToX(new Date(dates[i]), viewStart, pixelsPerDay)
+                - dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay),
         })
       }
     }
     return result
   }, [datedTasks, viewStart, pixelsPerDay])
 
-  // ── Zoom ────────────────────────────────────────────────────────────────
+  // ── Arrows ────────────────────────────────────────────────────────────────
+
+  const arrows = useMemo(() => {
+    const filteredIds = new Set(filtered.map(t => t.id))
+    const result: { id: string; d: string; dashed: boolean }[] = []
+    for (const task of filtered) {
+      const toPos = positions.get(task.id)
+      if (!toPos) continue
+      for (const predId of task.predecessorIds) {
+        const fromPos = positions.get(predId)
+        if (!fromPos) continue
+        const x1 = fromPos.x + CARD_WIDTH, y1 = fromPos.y + CARD_HEIGHT / 2
+        const x2 = toPos.x,                y2 = toPos.y  + CARD_HEIGHT / 2
+        const cx = (x1 + x2) / 2
+        result.push({ id: `${predId}->${task.id}`, d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`, dashed: !filteredIds.has(predId) })
+      }
+    }
+    return result
+  }, [filtered, positions])
+
+  const dragLine = useMemo(() => {
+    if (!relationDrag) return null
+    const src = positionsRef.current.get(relationDrag.sourceId)
+    if (!src) return null
+    const isSucc = relationDrag.type === 'successor'
+    return { x1: isSucc ? src.x + CARD_WIDTH : src.x, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
+  }, [relationDrag])
+
+  // ── Zoom ──────────────────────────────────────────────────────────────────
 
   function handleWheel(e: React.WheelEvent) {
     if (!e.ctrlKey && !e.metaKey) return
     e.preventDefault()
     const container = containerRef.current
     if (!container) return
-
     const rect = container.getBoundingClientRect()
     const mouseX = e.clientX - rect.left + container.scrollLeft
     const dateAtMouse = xToDate(mouseX, viewStart, pixelsPerDay)
-
-    const factor = e.deltaY < 0 ? 1.15 : 1 / 1.15
-    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pixelsPerDay * factor))
+    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pixelsPerDay * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
     setPixelsPerDay(newZoom)
-
-    // Re-center scroll so the date under the mouse stays in place
     requestAnimationFrame(() => {
       if (!containerRef.current) return
-      const newX = dateToX(dateAtMouse, viewStart, newZoom)
-      containerRef.current.scrollLeft = newX - (e.clientX - rect.left)
+      containerRef.current.scrollLeft = dateToX(dateAtMouse, viewStart, newZoom) - (e.clientX - rect.left)
     })
   }
 
-  // ── Pan (canvas drag) ────────────────────────────────────────────────────
+  // ── Pan ───────────────────────────────────────────────────────────────────
 
   const panRef = useRef<{ startX: number; scrollLeft: number } | null>(null)
 
   function handleCanvasMouseDown(e: React.MouseEvent) {
     if (e.target !== e.currentTarget) return
     panRef.current = { startX: e.clientX, scrollLeft: containerRef.current?.scrollLeft ?? 0 }
-
     function onMove(me: MouseEvent) {
       if (!panRef.current || !containerRef.current) return
       containerRef.current.scrollLeft = panRef.current.scrollLeft - (me.clientX - panRef.current.startX)
@@ -226,104 +277,102 @@ export function TaskGraph() {
     window.addEventListener('mouseup', onUp)
   }
 
-  // ── Task drag ────────────────────────────────────────────────────────────
+  // ── Task drag (reposition) ────────────────────────────────────────────────
 
   function handleTaskDragEnd(id: string, dx: number, dy: number) {
     const current = positions.get(id)
     if (!current) return
     const newPos = { x: current.x + dx, y: current.y + dy }
-
-    // Validate against dependency constraints (T10)
     const task = tasks.find(t => t.id === id)
     if (task) {
-      const newEndDate = xToDate(newPos.x + CARD_WIDTH, viewStart, pixelsPerDay)
-      const newStartDate = xToDate(newPos.x, viewStart, pixelsPerDay)
-
+      const newEnd   = xToDate(newPos.x + CARD_WIDTH, viewStart, pixelsPerDay)
+      const newStart = xToDate(newPos.x, viewStart, pixelsPerDay)
       for (const predId of task.predecessorIds) {
-        const predPos = positions.get(predId)
-        if (predPos) {
-          const predEnd = xToDate(predPos.x + CARD_WIDTH, viewStart, pixelsPerDay)
-          if (newStartDate < predEnd) return // constraint violation — block move
-        }
+        const p = positions.get(predId)
+        if (p && newStart < xToDate(p.x + CARD_WIDTH, viewStart, pixelsPerDay)) return
       }
       for (const succId of task.successorIds) {
-        const succPos = positions.get(succId)
-        if (succPos) {
-          const succStart = xToDate(succPos.x, viewStart, pixelsPerDay)
-          if (newEndDate > succStart) return // constraint violation — block move
-        }
+        const s = positions.get(succId)
+        if (s && newEnd > xToDate(s.x, viewStart, pixelsPerDay)) return
       }
     }
-
-    setPinnedPositions(prev => {
-      const next = new Map(prev)
-      next.set(id, newPos)
-      return next
-    })
-
-    // Persist to server asynchronously
+    setPinnedPositions(prev => { const n = new Map(prev); n.set(id, newPos); return n })
     updateTaskPosition(id, newPos).catch(() => {
-      // revert on failure
-      setPinnedPositions(prev => {
-        const next = new Map(prev)
-        next.delete(id)
-        return next
-      })
+      setPinnedPositions(prev => { const n = new Map(prev); n.delete(id); return n })
     })
   }
 
-  // ── Dependency arrows (SVG) ──────────────────────────────────────────────
+  // ── Relation drag (wire tasks together) ───────────────────────────────────
 
-  const arrows = useMemo(() => {
-    const result: { id: string; d: string; dashed: boolean }[] = []
-    const filteredIds = new Set(filtered.map(t => t.id))
+  function handleRelationDragStart(sourceId: string, type: RelationDragType, clientX: number, clientY: number) {
+    const container = containerRef.current
+    if (!container) return
+    const rect = container.getBoundingClientRect()
+    const coords = (cx: number, cy: number) => ({
+      x: cx - rect.left + container.scrollLeft,
+      y: cy - rect.top  + container.scrollTop,
+    })
+    const start = coords(clientX, clientY)
+    setRelationDrag({ sourceId, type, cursorX: start.x, cursorY: start.y })
 
-    for (const task of filtered) {
-      const toPos = positions.get(task.id)
-      if (!toPos) continue
-
-      for (const predId of task.predecessorIds) {
-        const fromPos = positions.get(predId)
-        const dashed = !filteredIds.has(predId)
-
-        if (fromPos) {
-          // Arrow from right-center of predecessor to left-center of successor
-          const x1 = fromPos.x + CARD_WIDTH
-          const y1 = fromPos.y + CARD_HEIGHT / 2
-          const x2 = toPos.x
-          const y2 = toPos.y + CARD_HEIGHT / 2
-          const cx = (x1 + x2) / 2
-          result.push({
-            id: `${predId}->${task.id}`,
-            d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`,
-            dashed,
-          })
-        }
+    function onMove(me: MouseEvent) {
+      const { x, y } = coords(me.clientX, me.clientY)
+      setRelationDrag(prev => prev ? { ...prev, cursorX: x, cursorY: y } : null)
+      let target: string | null = null
+      for (const [id, pos] of positionsRef.current) {
+        if (id === sourceId) continue
+        if (x >= pos.x && x <= pos.x + CARD_WIDTH && y >= pos.y && y <= pos.y + CARD_HEIGHT) { target = id; break }
       }
+      dragTargetRef.current = target
+      setDragTargetId(target)
     }
-    return result
-  }, [filtered, positions])
 
-  // ── Scroll to today on mount ─────────────────────────────────────────────
+    async function onUp() {
+      const targetId = dragTargetRef.current
+      if (targetId) await handleRelationDrop(sourceId, type, targetId)
+      setRelationDrag(null)
+      setDragTargetId(null)
+      dragTargetRef.current = null
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  async function handleRelationDrop(sourceId: string, type: RelationDragType, targetId: string) {
+    const src = tasksRef.current.find(t => t.id === sourceId)
+    const tgt = tasksRef.current.find(t => t.id === targetId)
+    if (!src || !tgt || sourceId === targetId) return
+    const localMap = new Map(tasksRef.current.map(t => [t.id, t]))
+    if (type === 'predecessor') {
+      if (src.predecessorIds.includes(targetId)) return
+      if (wouldCreateCycle(localMap, targetId, sourceId)) return
+      try { await addPredecessor(sourceId, targetId); await load() } catch { /* ignore */ }
+    } else {
+      if (tgt.predecessorIds.includes(sourceId)) return
+      if (wouldCreateCycle(localMap, sourceId, targetId)) return
+      try { await addPredecessor(targetId, sourceId); await load() } catch { /* ignore */ }
+    }
+  }
+
+  // ── Scroll to today ───────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      const container = containerRef.current
       const todayX = dateToX(new Date(), viewStart, pixelsPerDay)
-      container.scrollLeft = todayX - container.clientWidth * 0.35
+      containerRef.current.scrollLeft = todayX - containerRef.current.clientWidth * 0.35
     }
-    // Only run after initial load
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading])
 
-  // ── Filter helpers ────────────────────────────────────────────────────────
+  // ── Filters ───────────────────────────────────────────────────────────────
 
   function setFilter<K extends keyof Filters>(key: K, value: Filters[K]) {
     setFilters(prev => ({ ...prev, [key]: value }))
   }
-
   function clearFilters() { setFilters(DEFAULT_FILTERS) }
-
   const activeFilterCount = Object.values(filters).filter(Boolean).length
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -333,7 +382,6 @@ export function TaskGraph() {
 
   return (
     <div className={styles.root}>
-      {/* Filter panel */}
       {filtersOpen && (
         <div className={styles.filterPanel}>
           <div className={styles.filterGrid}>
@@ -395,77 +443,37 @@ export function TaskGraph() {
         </div>
       )}
 
-      {/* Graph canvas — scrollable */}
-      <div
-        ref={containerRef}
-        className={styles.canvasContainer}
-        onWheel={handleWheel}
-      >
-        <div
-          className={styles.canvas}
-          style={{ width: canvasWidth, height: canvasHeight }}
-          onMouseDown={handleCanvasMouseDown}
-        >
-          {/* Time axis */}
-          <TimeAxis
-            viewStart={viewStart}
-            viewEnd={viewEnd}
-            pixelsPerDay={pixelsPerDay}
-            canvasWidth={canvasWidth}
-            position="top"
-          />
+      <div ref={containerRef} className={styles.canvasContainer} onWheel={handleWheel}>
+        <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
+          <TimeAxis viewStart={viewStart} viewEnd={viewEnd} pixelsPerDay={pixelsPerDay} canvasWidth={canvasWidth} position="top" />
 
-          {/* Current week band (T6) */}
-          <div
-            className={styles.weekBand}
-            style={{ left: weekBand.x, width: weekBand.width }}
-            aria-hidden="true"
-          />
+          <div className={styles.weekBand} style={{ left: weekBand.x, width: weekBand.width }} aria-hidden="true" />
 
-          {/* Gap indicators — dashed sections (T7) */}
-          {gaps.map((gap, i) => (
-            <div
-              key={i}
-              className={styles.gap}
-              style={{ left: gap.x, width: gap.width }}
-              aria-hidden="true"
-            />
-          ))}
+          {gaps.map((g, i) => <div key={i} className={styles.gap} style={{ left: g.x, width: g.width }} aria-hidden="true" />)}
 
-          {/* Current moment line (T5) */}
-          <div
-            className={styles.nowLine}
-            style={{ left: nowX }}
-            aria-label="Current time"
-          />
+          <div className={styles.nowLine} style={{ left: nowX }} aria-label="Current time" />
 
-          {/* Dependency arrows SVG (T4) */}
-          <svg
-            className={styles.arrowsSvg}
-            width={canvasWidth}
-            height={canvasHeight}
-            aria-hidden="true"
-          >
+          <svg className={styles.arrowsSvg} width={canvasWidth} height={canvasHeight} aria-hidden="true">
             <defs>
               <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-border-strong)" />
               </marker>
+              <marker id="arrowhead-drag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
+              </marker>
             </defs>
             {arrows.map(a => (
-              <path
-                key={a.id}
-                d={a.d}
-                fill="none"
-                stroke="var(--color-border-strong)"
-                strokeWidth="1.5"
-                strokeDasharray={a.dashed ? '4 4' : undefined}
-                markerEnd="url(#arrowhead)"
-                opacity="0.6"
-              />
+              <path key={a.id} d={a.d} fill="none" stroke="var(--color-border-strong)"
+                strokeWidth="1.5" strokeDasharray={a.dashed ? '4 4' : undefined}
+                markerEnd="url(#arrowhead)" opacity="0.6" />
             ))}
+            {dragLine && (
+              <line x1={dragLine.x1} y1={dragLine.y1} x2={dragLine.x2} y2={dragLine.y2}
+                stroke="var(--color-primary)" strokeWidth="2" strokeDasharray="6 3"
+                markerEnd="url(#arrowhead-drag)" opacity="0.8" />
+            )}
           </svg>
 
-          {/* Task items (T3, T8, T9, T10) */}
           {datedTasks.map(task => {
             const pos = positions.get(task.id)
             if (!pos) return null
@@ -473,29 +481,28 @@ export function TaskGraph() {
               <TaskGraphItem
                 key={task.id}
                 task={task}
+                taskMap={taskMap}
                 x={pos.x}
                 y={pos.y}
                 selected={selectedTaskId === task.id}
+                isDragTarget={dragTargetId === task.id}
                 onSelect={setSelectedTaskId}
                 onDragEnd={handleTaskDragEnd}
+                onRelationDragStart={handleRelationDragStart}
               />
             )
           })}
         </div>
 
-        {/* Open-ended tasks sidebar (T12) */}
         {showOpenEnded && openEndedTasks.length > 0 && (
           <div className={styles.openEndedPanel}>
             <div className={styles.openEndedTitle}>Open-ended</div>
             {openEndedTasks.map(task => (
-              <div
-                key={task.id}
+              <div key={task.id}
                 className={`${styles.openEndedItem} ${selectedTaskId === task.id ? styles.openEndedSelected : ''}`}
-                role="button"
-                tabIndex={0}
+                role="button" tabIndex={0}
                 onClick={() => setSelectedTaskId(task.id)}
-                onKeyDown={e => { if (e.key === 'Enter') setSelectedTaskId(task.id) }}
-              >
+                onKeyDown={e => { if (e.key === 'Enter') setSelectedTaskId(task.id) }}>
                 {task.title}
               </div>
             ))}
@@ -503,22 +510,15 @@ export function TaskGraph() {
         )}
       </div>
 
-      {/* Action panel (bottom) */}
       <div className={styles.actionPanel}>
         <div className={styles.actionLeft}>
-          <button
-            className={`${styles.iconBtn} ${filtersOpen ? styles.iconBtnActive : ''}`}
-            onClick={() => setFiltersOpen(v => !v)}
-            aria-expanded={filtersOpen}
-            title="Toggle filters"
-          >
+          <button className={`${styles.iconBtn} ${filtersOpen ? styles.iconBtnActive : ''}`}
+            onClick={() => setFiltersOpen(v => !v)} aria-expanded={filtersOpen} title="Toggle filters">
             Filters {activeFilterCount > 0 && <span className={styles.badge}>{activeFilterCount}</span>}
           </button>
-          <button
-            className={`${styles.iconBtn} ${!showOpenEnded ? styles.iconBtnActive : ''}`}
+          <button className={`${styles.iconBtn} ${!showOpenEnded ? styles.iconBtnActive : ''}`}
             onClick={() => setShowOpenEnded(v => !v)}
-            title={showOpenEnded ? 'Hide open-ended tasks' : 'Show open-ended tasks'}
-          >
+            title={showOpenEnded ? 'Hide open-ended tasks' : 'Show open-ended tasks'}>
             Open-ended: {showOpenEnded ? 'shown' : 'hidden'}
           </button>
         </div>
