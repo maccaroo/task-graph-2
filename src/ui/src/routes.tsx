@@ -1,6 +1,10 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
 import { ROUTES } from './routeConstants'
+import { LoginView } from './views/auth/LoginView'
+import { PasswordResetRequestView } from './views/auth/PasswordResetRequestView'
+import { PasswordResetView } from './views/auth/PasswordResetView'
+import { RegisterView } from './views/auth/RegisterView'
 
 // Placeholder views — replaced in subsequent phases
 function Placeholder({ name }: { name: string }) {
@@ -14,10 +18,10 @@ function Placeholder({ name }: { name: string }) {
 
 export const router = createBrowserRouter([
   // Public routes
-  { path: ROUTES.LOGIN, element: <Placeholder name="Login" /> },
-  { path: ROUTES.REGISTER, element: <Placeholder name="Create Account" /> },
-  { path: ROUTES.PASSWORD_RESET_REQUEST, element: <Placeholder name="Password Reset Request" /> },
-  { path: ROUTES.PASSWORD_RESET, element: <Placeholder name="Password Reset" /> },
+  { path: ROUTES.LOGIN, element: <LoginView /> },
+  { path: ROUTES.REGISTER, element: <RegisterView /> },
+  { path: ROUTES.PASSWORD_RESET_REQUEST, element: <PasswordResetRequestView /> },
+  { path: ROUTES.PASSWORD_RESET, element: <PasswordResetView /> },
 
   // Protected routes
   {

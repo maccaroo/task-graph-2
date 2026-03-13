@@ -54,11 +54,11 @@
 [x] T5 - Set up WebSocket client with reconnection handling
 
 ## P8 - Authentication UI
-[ ] T1 - Build Login view (logo, username, password, links to register/forgot)
-[ ] T2 - Build Create Account view (first name, last name, username, email, password with full validation)
-[ ] T3 - Build Password Reset Request view (username or email input, validate exists)
-[ ] T4 - Build Password Reset view (new password + confirm, validate match + length + token validity)
-[ ] T5 - Add auth guard — redirect to login when unauthenticated
+[x] T1 - Build Login view (logo, username, password, links to register/forgot)
+[x] T2 - Build Create Account view (first name, last name, username, email, password with full validation)
+[x] T3 - Build Password Reset Request view (username or email input, validate exists)
+[x] T4 - Build Password Reset view (new password + confirm, validate match + length + token validity)
+[x] T5 - Add auth guard — redirect to login when unauthenticated
 
 ## P9 - Statusbar Component
 [ ] T1 - Build Statusbar showing logged-in user (avatar, first/last name)
