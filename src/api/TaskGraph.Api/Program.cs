@@ -37,6 +37,7 @@ builder.Services.AddAuthorizationBuilder()
 
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddControllers();
 
 var app = builder.Build();

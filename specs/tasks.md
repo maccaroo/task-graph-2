@@ -29,15 +29,15 @@
 [x] T4 - Implement PUT /users/{id}/avatar (upload avatar, max 10MB, crop support)
 
 ## P5 - Tasks API
-[ ] T1 - Implement GET /tasks (list tasks with filters: assignee, priority, tags, status, due status, date range)
-[ ] T2 - Implement POST /tasks (create task)
-[ ] T3 - Implement GET /tasks/{id}
-[ ] T4 - Implement PUT /tasks/{id} (update task fields)
-[ ] T5 - Implement DELETE /tasks/{id}
-[ ] T6 - Implement PUT /tasks/{id}/position (update pinned graph position)
-[ ] T7 - Implement POST /tasks/{id}/predecessors/{predecessorId} (add dependency)
-[ ] T8 - Implement DELETE /tasks/{id}/predecessors/{predecessorId} (remove dependency)
-[ ] T9 - Add dependency constraint validation (predecessor end < task start)
+[x] T1 - Implement GET /tasks (list tasks with filters: assignee, priority, tags, status, due status, date range)
+[x] T2 - Implement POST /tasks (create task)
+[x] T3 - Implement GET /tasks/{id}
+[x] T4 - Implement PUT /tasks/{id} (update task fields)
+[x] T5 - Implement DELETE /tasks/{id}
+[x] T6 - Implement PUT /tasks/{id}/position (update pinned graph position)
+[x] T7 - Implement POST /tasks/{id}/predecessors/{predecessorId} (add dependency)
+[x] T8 - Implement DELETE /tasks/{id}/predecessors/{predecessorId} (remove dependency)
+[x] T9 - Add dependency constraint validation (predecessor end < task start)
 
 ## P6 - Notifications API & WebSockets
 [ ] T1 - Implement GET /notifications (list notifications for current user)
