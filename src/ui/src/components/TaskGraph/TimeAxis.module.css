@@ -1,0 +1,64 @@
+.axis {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  height: 48px;
+  background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--color-border);
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.top {
+  top: 0;
+}
+
+.bottom {
+  top: auto;
+  bottom: 0;
+  border-bottom: none;
+  border-top: 1px solid var(--color-border);
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  transform: translateX(-1px);
+}
+
+.line {
+  width: 1px;
+  height: 8px;
+  background: var(--color-border-strong);
+  opacity: 0.6;
+}
+
+.major .line {
+  height: 14px;
+  opacity: 1;
+}
+
+.label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding-top: 2px;
+  padding-left: 4px;
+  user-select: none;
+}
+
+.major .label {
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .axis {
+    background: rgba(17, 17, 24, 0.85);
+  }
+}

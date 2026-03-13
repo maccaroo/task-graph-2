@@ -87,18 +87,18 @@
 [x] T7 - Toggle open-ended task display position (before/after dated tasks)
 
 ## P13 - Task Graph View
-[ ] T1 - Build time axis component (configurable position: top/bottom/left/right, semi-transparent float)
-[ ] T2 - Time axis tick marks adapt to zoom level (hours/days → months/years)
-[ ] T3 - Render task items on graph canvas positioned by due date and dependencies
-[ ] T4 - Draw dependency arrows between task items
-[ ] T5 - Render current moment indicator line
-[ ] T6 - Render current time block band
-[ ] T7 - Show dashed lines for missing/gap graph sections
-[ ] T8 - Auto-position tasks based on due dates and dependencies
-[ ] T9 - Support user pinning of task positions (drag to override auto-position)
-[ ] T10 - Drag task to new position while respecting dependency constraints
-[ ] T11 - Add filter panel (text, assignee, priority, tags, completion, due status, dates)
-[ ] T12 - Toggle open-ended tasks visibility
+[x] T1 - Build time axis component (configurable position: top/bottom/left/right, semi-transparent float)
+[x] T2 - Time axis tick marks adapt to zoom level (hours/days → months/years)
+[x] T3 - Render task items on graph canvas positioned by due date and dependencies
+[x] T4 - Draw dependency arrows between task items
+[x] T5 - Render current moment indicator line
+[x] T6 - Render current time block band
+[x] T7 - Show dashed lines for missing/gap graph sections
+[x] T8 - Auto-position tasks based on due dates and dependencies
+[x] T9 - Support user pinning of task positions (drag to override auto-position)
+[x] T10 - Drag task to new position while respecting dependency constraints
+[x] T11 - Add filter panel (text, assignee, priority, tags, completion, due status, dates)
+[x] T12 - Toggle open-ended tasks visibility
 
 ## P14 - Task Item Component (Graph)
 [ ] T1 - Build task item card (title, status colour, time remaining/overdue)

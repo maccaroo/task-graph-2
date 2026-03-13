@@ -46,3 +46,7 @@ export async function createTask(data: CreateTaskData): Promise<Task> {
   const { data: task } = await api.post<Task>('/tasks', data)
   return task
 }
+
+export async function updateTaskPosition(id: string, position: { x: number; y: number }): Promise<void> {
+  await api.put(`/tasks/${id}/position`, position)
+}
