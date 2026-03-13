@@ -99,6 +99,8 @@
 [x] T10 - Drag task to new position while respecting dependency constraints
 [x] T11 - Add filter panel (text, assignee, priority, tags, completion, due status, dates)
 [x] T12 - Toggle open-ended tasks visibility
+[x] T13 - Show time period bands on time axis (coloured background + period name label)
+[x] T14 - Only show date labels on major ticks (reduce tick label crowding)
 
 ## P14 - Task Item Component (Graph)
 [x] T1 - Build task item card (title, status colour, time remaining/overdue)
