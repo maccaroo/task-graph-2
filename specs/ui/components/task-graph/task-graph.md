@@ -21,6 +21,8 @@ The graph panel displays the graph of tasks and their relationships.  It also co
 ### Task items
 Each task item in the graph provides a succinct view of a task.  It provides enough information to be useful without overwhelming the user.  The task item is coloured according its status.
 
+Open-ended tasks (those with no start date and no end date — i.e., no timing constraints on either end) are positioned at the end of the Present time period on the graph.
+
 For details of task items, see `task-item.md`.
 
 ### Time axis

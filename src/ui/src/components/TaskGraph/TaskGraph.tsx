@@ -147,7 +147,8 @@ export function TaskGraph() {
 
   const filtered = useMemo(() => {
     const f = applyFilters(tasks, filters)
-    return showOpenEnded ? f : f.filter(t => t.endDate)
+    // Hide tasks with no timing constraints on either end (truly open-ended)
+    return showOpenEnded ? f : f.filter(t => t.startDate || t.endDate)
   }, [tasks, filters, showOpenEnded])
 
   const taskMap = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks])
@@ -183,9 +184,6 @@ export function TaskGraph() {
 
   useEffect(() => { positionsRef.current = positions }, [positions])
 
-  const openEndedTasks = useMemo(() => filtered.filter(t => !t.endDate), [filtered])
-  const datedTasks    = useMemo(() => filtered.filter(t =>  t.endDate), [filtered])
-
   const nowX = useMemo(() => dateToX(new Date(), viewStart, pixelsPerDay), [viewStart, pixelsPerDay])
 
   const weekBand = useMemo(() => ({
@@ -194,7 +192,7 @@ export function TaskGraph() {
   }), [viewStart, pixelsPerDay])
 
   const gaps = useMemo(() => {
-    const dates = datedTasks
+    const dates = filtered.filter(t => t.endDate)
       .flatMap(t => [t.startDate, t.endDate].filter(Boolean) as string[])
       .map(s => new Date(s).getTime())
       .sort((a, b) => a - b)
@@ -209,7 +207,7 @@ export function TaskGraph() {
       }
     }
     return result
-  }, [datedTasks, viewStart, pixelsPerDay])
+  }, [filtered, viewStart, pixelsPerDay])
 
   // ── Arrows ────────────────────────────────────────────────────────────────
 
@@ -474,7 +472,7 @@ export function TaskGraph() {
             )}
           </svg>
 
-          {datedTasks.map(task => {
+          {filtered.map(task => {
             const pos = positions.get(task.id)
             if (!pos) return null
             return (
@@ -494,20 +492,7 @@ export function TaskGraph() {
           })}
         </div>
 
-        {showOpenEnded && openEndedTasks.length > 0 && (
-          <div className={styles.openEndedPanel}>
-            <div className={styles.openEndedTitle}>Open-ended</div>
-            {openEndedTasks.map(task => (
-              <div key={task.id}
-                className={`${styles.openEndedItem} ${selectedTaskId === task.id ? styles.openEndedSelected : ''}`}
-                role="button" tabIndex={0}
-                onClick={() => setSelectedTaskId(task.id)}
-                onKeyDown={e => { if (e.key === 'Enter') setSelectedTaskId(task.id) }}>
-                {task.title}
-              </div>
-            ))}
-          </div>
-        )}
+
       </div>
 
       <div className={styles.actionPanel}>

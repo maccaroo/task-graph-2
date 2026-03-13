@@ -89,11 +89,18 @@ describe('computeAutoLayout', () => {
     expect(positions.has('t1')).toBe(true)
   })
 
-  it('omits tasks without an end date', () => {
+  it('positions tasks without an end date at end of present week', () => {
     const viewStart = new Date('2025-01-01')
-    const tasks = [makeTask({ id: 't1' })] // no endDate
+    // Both open-ended (no dates) and start-only tasks should be positioned here
+    const tasks = [
+      makeTask({ id: 't1' }),
+      makeTask({ id: 't2', startDate: '2025-01-15' }),
+    ]
     const positions = computeAutoLayout(tasks, viewStart, 40)
-    expect(positions.has('t1')).toBe(false)
+    expect(positions.has('t1')).toBe(true)
+    expect(positions.has('t2')).toBe(true)
+    expect(positions.get('t1')!.x).toBeGreaterThan(CANVAS_PAD_X - CARD_WIDTH)
+    expect(positions.get('t2')!.x).toBeGreaterThan(CANVAS_PAD_X - CARD_WIDTH)
   })
 
   it('aligns task right edge to end date x position', () => {

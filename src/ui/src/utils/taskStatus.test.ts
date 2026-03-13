@@ -26,8 +26,12 @@ describe('computeDueStatus', () => {
     expect(computeDueStatus(task({ status: 'Complete', endDate: isoOffset(-1) }))).toBe('completed')
   })
 
-  it('returns none when no end date', () => {
+  it('returns none when no end date (open-ended)', () => {
     expect(computeDueStatus(task())).toBe('none')
+  })
+
+  it('returns none when start date set but no end date', () => {
+    expect(computeDueStatus(task({ startDate: isoOffset(-3) }))).toBe('none')
   })
 
   it('returns due-today for today', () => {

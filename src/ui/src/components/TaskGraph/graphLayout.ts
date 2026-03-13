@@ -65,18 +65,36 @@ export interface TaskPosition {
   y: number
 }
 
+/** Returns the date at the end of the current Present period (start of next week). */
+function presentWeekEnd(): Date {
+  const now = new Date()
+  const day = now.getDay()
+  // Days until next Monday: Sunday (0) → 1, Monday (1) → 7, Tuesday (2) → 6, …
+  const diff = day === 0 ? 1 : 8 - day
+  const end = new Date(now)
+  end.setDate(now.getDate() + diff)
+  end.setHours(0, 0, 0, 0)
+  return end
+}
+
 export function computeAutoLayout(
   tasks: Task[],
   viewStart: Date,
   pixelsPerDay: number,
 ): Map<string, TaskPosition> {
-  const datedTasks = tasks.filter(t => t.endDate)
-  const sorted = topologicalSort(datedTasks)
+  const openEndedEndX = dateToX(presentWeekEnd(), viewStart, pixelsPerDay)
+
+  // Tasks with an end date are sorted topologically; all others use presentWeekEnd as their virtual end
+  const withEnd    = tasks.filter(t =>  t.endDate)
+  const withoutEnd = tasks.filter(t => !t.endDate)
+  const sorted = topologicalSort(withEnd)
+  const allOrdered = [...sorted, ...withoutEnd]
+
   const positions = new Map<string, TaskPosition>()
   const rowMaxX: number[] = []
 
-  for (const task of sorted) {
-    const endX = dateToX(task.endDate!, viewStart, pixelsPerDay)
+  for (const task of allOrdered) {
+    const endX = task.endDate ? dateToX(task.endDate, viewStart, pixelsPerDay) : openEndedEndX
     const cardLeft = endX - CARD_WIDTH
 
     let row = 0
