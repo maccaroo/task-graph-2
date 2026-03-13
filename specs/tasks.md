@@ -23,10 +23,10 @@
 [x] T6 - Add JWT middleware for protected routes
 
 ## P4 - Users API
-[ ] T1 - Implement GET /users (list all users with task count summary by status)
-[ ] T2 - Implement GET /users/{id}
-[ ] T3 - Implement PUT /users/{id} (update profile fields)
-[ ] T4 - Implement PUT /users/{id}/avatar (upload avatar, max 10MB, crop support)
+[x] T1 - Implement GET /users (list all users with task count summary by status)
+[x] T2 - Implement GET /users/{id}
+[x] T3 - Implement PUT /users/{id} (update profile fields)
+[x] T4 - Implement PUT /users/{id}/avatar (upload avatar, max 10MB, crop support)
 
 ## P5 - Tasks API
 [ ] T1 - Implement GET /tasks (list tasks with filters: assignee, priority, tags, status, due status, date range)
