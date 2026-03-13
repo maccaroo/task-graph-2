@@ -9,10 +9,10 @@
 [x] T6 - Set up pre-commit git hook to run unit tests
 
 ## P2 - Database Schema & Migrations
-[ ] T1 - Create Users table (id, username, first_name, last_name, email, password_hash, avatar_url, configuration JSON)
-[ ] T2 - Create Tasks table (id, title, description, assignee_id, status, priority, tags, start_type, start_date, end_type, end_date, duration, pinned_position JSON)
-[ ] T3 - Create TaskRelationships table (task_id, predecessor_id)
-[ ] T4 - Create Notifications table (id, user_id, type, task_id, message, is_read, created_at)
+[x] T1 - Create Users table (id, username, first_name, last_name, email, password_hash, avatar_url, configuration JSON)
+[x] T2 - Create Tasks table (id, title, description, assignee_id, status, priority, tags, start_type, start_date, end_type, end_date, duration, pinned_position JSON)
+[x] T3 - Create TaskRelationships table (task_id, predecessor_id)
+[x] T4 - Create Notifications table (id, user_id, type, task_id, message, is_read, created_at)
 
 ## P3 - Authentication API
 [ ] T1 - Implement POST /auth/register (validate fields, hash password, create user)
