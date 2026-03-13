@@ -78,13 +78,13 @@
 [x] T3 - Click notification → mark as read and navigate to task
 
 ## P12 - Task List View
-[ ] T1 - Build Task List component (columns: title, priority, tags, assignee, start, end, duration, status)
-[ ] T2 - Default sort by due date; click-to-sort by other columns
-[ ] T3 - Add filter panel (text, assignee, priority, tags, completion, due status, date range)
-[ ] T4 - Apply task status colours matching due-status spec (blue/green/orange/red/maroon/gold)
-[ ] T5 - Add current time block band (when sorted by due date)
-[ ] T6 - Add "Add Task" button
-[ ] T7 - Toggle open-ended task display position (before/after dated tasks)
+[x] T1 - Build Task List component (columns: title, priority, tags, assignee, start, end, duration, status)
+[x] T2 - Default sort by due date; click-to-sort by other columns
+[x] T3 - Add filter panel (text, assignee, priority, tags, completion, due status, date range)
+[x] T4 - Apply task status colours matching due-status spec (blue/green/orange/red/maroon/gold)
+[x] T5 - Add current time block band (when sorted by due date)
+[x] T6 - Add "Add Task" button
+[x] T7 - Toggle open-ended task display position (before/after dated tasks)
 
 ## P13 - Task Graph View
 [ ] T1 - Build time axis component (configurable position: top/bottom/left/right, semi-transparent float)
