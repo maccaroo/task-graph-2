@@ -4,4 +4,5 @@ export const ROUTES = {
   PASSWORD_RESET_REQUEST: '/password-reset-request',
   PASSWORD_RESET: '/password-reset',
   DASHBOARD: '/',
+  TASK: (id: string) => `/tasks/${id}`,
 } as const

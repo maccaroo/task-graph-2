@@ -81,7 +81,8 @@ public class UserService(AppDbContext db, IWebHostEnvironment env) : IUserServic
         var user = await db.Users.FindAsync(id)
             ?? throw new NotFoundException($"User {id} not found.");
 
-        var avatarDir = Path.Combine(env.WebRootPath, "avatars");
+        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        var avatarDir = Path.Combine(webRoot, "avatars");
         Directory.CreateDirectory(avatarDir);
         var filePath = Path.Combine(avatarDir, $"{id}.jpg");
 

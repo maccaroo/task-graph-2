@@ -18,17 +18,14 @@ interface AvatarCropPickerProps {
 
 export function AvatarCropPicker({ file, uploading, onConfirm, onCancel }: AvatarCropPickerProps) {
   const imgRef = useRef<HTMLImageElement>(null)
-  const [objectUrl, setObjectUrl] = useState('')
+  // file prop never changes while mounted — lazy-init the URL and revoke on unmount
+  const [objectUrl] = useState(() => URL.createObjectURL(file))
   const [crop, setCrop] = useState<CropBox | null>(null)
 
   // image display dimensions stored in a ref so drag closures always see current values
   const imgDims = useRef({ w: 0, h: 0, natW: 0, natH: 0 })
 
-  useEffect(() => {
-    const url = URL.createObjectURL(file)
-    setObjectUrl(url)
-    return () => URL.revokeObjectURL(url)
-  }, [file])
+  useEffect(() => () => URL.revokeObjectURL(objectUrl), [objectUrl])
 
   function handleImgLoad() {
     const img = imgRef.current

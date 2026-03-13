@@ -38,9 +38,18 @@ export async function updateAvatar(id: string, file: File, crop?: AvatarCrop): P
     form.append('cropWidth', String(crop.width))
     form.append('cropHeight', String(crop.height))
   }
-  // Pass undefined Content-Type so Axios sets the multipart boundary automatically
-  const { data } = await api.put<User>(`/users/${id}/avatar`, form, {
-    headers: { 'Content-Type': undefined },
+  // Use fetch instead of Axios so the browser sets the correct multipart/form-data
+  // Content-Type with boundary — Axios's instance default (application/json) would
+  // override any attempt to clear it and break multipart parsing on the server.
+  const token = localStorage.getItem('auth_token')
+  const res = await fetch(`/api/users/${id}/avatar`, {
+    method: 'PUT',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
   })
-  return data
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({})) as { error?: string; message?: string }
+    throw new Error(body.error ?? body.message ?? 'An unexpected error occurred.')
+  }
+  return res.json() as Promise<User>
 }

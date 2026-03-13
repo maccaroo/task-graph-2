@@ -79,6 +79,8 @@ export class WebSocketClient {
   }
 }
 
-// Singleton instance — configured from env variable
-const WS_URL = (import.meta.env.VITE_WS_URL as string | undefined) ?? 'ws://localhost:5000/ws'
+// Singleton instance — derive URL from current host so it works through Vite proxy and nginx
+const WS_URL =
+  (import.meta.env.VITE_WS_URL as string | undefined) ??
+  `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
 export const wsClient = new WebSocketClient(WS_URL)

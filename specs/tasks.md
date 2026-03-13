@@ -73,9 +73,9 @@
 [x] T4 - Reset password button (triggers password-reset-request flow)
 
 ## P11 - Notifications Component
-[ ] T1 - Build Notification List popup (type, task title hyperlink, timestamp)
-[ ] T2 - Subscribe to WebSocket `notification` events to update list in real time
-[ ] T3 - Click notification → mark as read and navigate to task
+[x] T1 - Build Notification List popup (type, task title hyperlink, timestamp)
+[x] T2 - Subscribe to WebSocket `notification` events to update list in real time
+[x] T3 - Click notification → mark as read and navigate to task
 
 ## P12 - Task List View
 [ ] T1 - Build Task List component (columns: title, priority, tags, assignee, start, end, duration, status)

@@ -32,6 +32,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateLifetime = true,
             ClockSkew = TimeSpan.Zero
         };
+        // WebSocket connections can't set headers — read token from query string instead
+        options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var token = ctx.Request.Query["token"];
+                if (!string.IsNullOrEmpty(token) && ctx.Request.Path == "/ws")
+                    ctx.Token = token;
+                return Task.CompletedTask;
+            }
+        };
     });
 
 builder.Services.AddAuthorizationBuilder()
@@ -52,7 +63,15 @@ using (var scope = app.Services.CreateScope())
     await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
+
+// Serve static files (avatars, etc.) from wwwroot, creating it if needed
+var webRootPath = app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot");
+Directory.CreateDirectory(webRootPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRootPath),
+    RequestPath = ""
+});
 app.UseWebSockets();
 app.UseAuthentication();
 app.UseAuthorization();
@@ -66,37 +85,10 @@ app.Map("/ws", async context =>
         return;
     }
 
-    var token = context.Request.Query["access_token"].FirstOrDefault()
-        ?? context.Request.Headers.Authorization.ToString().Replace("Bearer ", "").Trim();
-
-    if (string.IsNullOrEmpty(token))
-    {
-        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-        return;
-    }
-
-    Guid userId;
-    try
-    {
-        var jwtSection = context.RequestServices.GetRequiredService<IConfiguration>().GetSection("Jwt");
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSection["SecretKey"]!));
-        var principal = new JwtSecurityTokenHandler().ValidateToken(token, new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = key,
-            ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        }, out _);
-
-        var sub = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
-            ?? principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-        userId = Guid.Parse(sub!);
-    }
-    catch
+    // Auth is enforced by UseAuthorization (JWT reads token from query string via OnMessageReceived)
+    var sub = context.User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+        ?? context.User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+    if (!Guid.TryParse(sub, out var userId))
     {
         context.Response.StatusCode = StatusCodes.Status401Unauthorized;
         return;
