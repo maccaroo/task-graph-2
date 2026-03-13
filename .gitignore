@@ -1,0 +1,62 @@
+# Dependencies
+node_modules/
+yarn.lock
+
+# Production
+dist/
+build/
+*.local
+
+# Misc
+.DS_Store
+.env
+.env.local
+.env.*.local
+infrastructure/.env
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# IDE
+.eslintcache
+
+# Testing
+coverage/
+.nyc_output/
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+/playwright/.auth/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+Thumbs.db
+
+# TypeScript
+*.tsbuildinfo
+
+# .NET / C#
+src/api/**/bin/
+src/api/**/obj/
+src/api/**/*.user
+src/api/**/*.suo
+src/api/**/*.db
+src/api/**/*.db-*
+src/api/data/.gitkeep
+src/api/data/
+src/api/backups/
+

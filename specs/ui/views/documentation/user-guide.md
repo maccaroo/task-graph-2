@@ -1,0 +1,2 @@
+# User Guide
+A guide to using the application, including how to use the various features and components.  This is intended for end users of the application, and should be written in a clear and concise manner, with step-by-step instructions and screenshots where appropriate.
