@@ -61,10 +61,10 @@
 [x] T5 - Add auth guard — redirect to login when unauthenticated
 
 ## P9 - Statusbar Component
-[ ] T1 - Build Statusbar showing logged-in user (avatar, first/last name)
-[ ] T2 - Add notifications counter (icon + unread count badge)
-[ ] T3 - User click → dropdown with "Open user profile" and "Logout"
-[ ] T4 - Notifications click → open Notification List popup
+[x] T1 - Build Statusbar showing logged-in user (avatar, first/last name)
+[x] T2 - Add notifications counter (icon + unread count badge)
+[x] T3 - User click → dropdown with "Open user profile" and "Logout"
+[x] T4 - Notifications click → open Notification List popup
 
 ## P10 - User Profile Component
 [ ] T1 - Build User Profile popup (avatar, username read-only, first/last name, email)
