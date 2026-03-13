@@ -77,9 +77,9 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
             Priority = request.Priority,
             Tags = request.Tags ?? [],
             StartType = request.StartType,
-            StartDate = request.StartDate,
+            StartDate = ToUtc(request.StartDate),
             EndType = request.EndType,
-            EndDate = request.EndDate,
+            EndDate = ToUtc(request.EndDate),
             Duration = request.Duration
         };
 
@@ -106,9 +106,9 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         task.Priority = request.Priority;
         task.Tags = request.Tags;
         task.StartType = request.StartType;
-        task.StartDate = request.StartDate;
+        task.StartDate = ToUtc(request.StartDate);
         task.EndType = request.EndType;
-        task.EndDate = request.EndDate;
+        task.EndDate = ToUtc(request.EndDate);
         task.Duration = request.Duration;
 
         await db.SaveChangesAsync();
@@ -179,6 +179,10 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         db.TaskRelationships.Remove(rel);
         await db.SaveChangesAsync();
     }
+
+    /** Npgsql requires DateTimeKind.Utc for timestamptz columns. */
+    private static DateTime? ToUtc(DateTime? dt) =>
+        dt is { } d ? DateTime.SpecifyKind(d, DateTimeKind.Utc) : null;
 
     private async Task<TaskItem> LoadTaskAsync(Guid id) =>
         await db.Tasks

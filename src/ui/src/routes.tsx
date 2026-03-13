@@ -6,6 +6,7 @@ import { LoginView } from './views/auth/LoginView'
 import { PasswordResetRequestView } from './views/auth/PasswordResetRequestView'
 import { PasswordResetView } from './views/auth/PasswordResetView'
 import { RegisterView } from './views/auth/RegisterView'
+import { TaskListView } from './views/tasks/TaskListView'
 
 // Placeholder views — replaced in subsequent phases
 function Placeholder({ name }: { name: string }) {
@@ -31,7 +32,9 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: ROUTES.DASHBOARD, element: <Placeholder name="Dashboard" /> },
+          { path: ROUTES.DASHBOARD, element: <TaskListView /> },
+          { path: ROUTES.TASKS,     element: <TaskListView /> },
+          { path: ROUTES.TASK(':id'), element: <Placeholder name="Task Detail" /> },
         ],
       },
     ],

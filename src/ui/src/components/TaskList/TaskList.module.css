@@ -1,0 +1,306 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+
+.heading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.filterToggle {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.filterToggle:hover { background-color: var(--color-border); }
+.filterToggleActive { background-color: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
+
+.filterBadge {
+  font-size: var(--text-xs);
+  font-weight: var(--font-bold);
+  background: var(--color-primary);
+  color: var(--color-text-inverse);
+  border-radius: var(--radius-full);
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+}
+
+.toggleBtn {
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-1) var(--space-3);
+  height: 30px;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.toggleBtn:hover { background-color: var(--color-border); }
+.toggleBtnActive { background-color: var(--color-primary-subtle); color: var(--color-primary); border-color: var(--color-primary); }
+
+/* ── Filter panel ─────────────────────────────────────────────────────── */
+
+.filterPanel {
+  padding: var(--space-3) var(--space-5);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--space-3);
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.filterLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.filterInput,
+.filterSelect {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-2) var(--space-3);
+  height: 32px;
+  width: 100%;
+  transition: border-color var(--transition-fast);
+}
+
+.filterInput:focus,
+.filterSelect:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -1px;
+}
+
+.clearFilters {
+  margin-top: var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.clearFilters:hover { text-decoration: underline; }
+
+/* ── Table ────────────────────────────────────────────────────────────── */
+
+.tableWrapper {
+  flex: 1;
+  overflow: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+
+.th {
+  position: sticky;
+  top: 0;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  text-align: left;
+  padding: 0;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.thActive { color: var(--color-primary); }
+
+.sortBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: inherit;
+  background: none;
+  border: none;
+  padding: var(--space-2) var(--space-3);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+}
+
+.sortBtn:hover { background: var(--color-border); }
+
+.sortIcon { flex-shrink: 0; }
+.sortIconActive { color: var(--color-primary); }
+
+/* Rows */
+.row {
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+  /* Left status stripe via box-shadow so it doesn't affect layout */
+  box-shadow: inset 3px 0 0 var(--status-color, transparent);
+}
+
+.row:hover { background-color: var(--color-surface); }
+.row:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+
+.td {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+.tdTitle {
+  padding: var(--space-2) var(--space-3);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  vertical-align: middle;
+  max-width: 280px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Today divider */
+.dividerRow td {
+  padding: 0;
+  border-bottom: none;
+  background: transparent;
+}
+
+.dividerLabel {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  color: var(--color-status-due-today);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+}
+
+.dividerLabel::before,
+.dividerLabel::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-status-due-today);
+  opacity: 0.4;
+}
+
+/* Empty / loading */
+.empty {
+  padding: var(--space-12) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.state {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.stateError {
+  padding: var(--space-8) var(--space-4);
+  text-align: center;
+  color: var(--color-danger);
+  font-size: var(--text-sm);
+}
+
+/* Badges */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--text-xs);
+  font-weight: var(--font-semibold);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+
+.priorityHigh   { color: var(--color-danger);   border-color: var(--color-danger);  background: var(--color-danger-subtle); }
+.priorityMedium { color: var(--color-warning);  border-color: var(--color-warning); background: var(--color-warning-subtle); }
+.priorityLow    { color: var(--color-text-secondary); border-color: var(--color-border); background: var(--color-surface); }
+
+.statusComplete { color: var(--color-success); border-color: var(--color-success); background: var(--color-success-subtle); }
+
+/* Tags */
+.tags { display: flex; flex-wrap: nowrap; gap: var(--space-1); align-items: center; }
+
+.tag {
+  font-size: var(--text-xs);
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--color-primary-subtle);
+  color: var(--color-primary);
+  white-space: nowrap;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tagMore {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.none { color: var(--color-text-disabled); }

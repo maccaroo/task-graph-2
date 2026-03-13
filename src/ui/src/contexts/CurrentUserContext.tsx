@@ -13,10 +13,11 @@ export const CurrentUserContext = createContext<CurrentUserContextValue | null>(
 export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth()
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  // Start as loading only when there is a userId to fetch; avoids synchronous setState in effect
+  const [loading, setLoading] = useState(() => !!userId)
 
   const refresh = useCallback(async () => {
-    if (!userId) { setLoading(false); return }
+    if (!userId) return
     setLoading(true)
     try {
       setUser(await getUser(userId))
@@ -27,7 +28,10 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
     }
   }, [userId])
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => {
+    if (!userId) { setUser(null); return }
+    refresh()
+  }, [refresh, userId])
 
   return (
     <CurrentUserContext.Provider value={{ user, loading, refresh }}>

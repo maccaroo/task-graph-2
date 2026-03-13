@@ -16,6 +16,21 @@ export interface AvatarCrop {
   height: number
 }
 
+export interface UserSummary {
+  id: string
+  username: string
+  firstName: string
+  lastName: string
+  avatarUrl: string | null
+  completeTasks: number
+  incompleteTasks: number
+}
+
+export async function getUsers(): Promise<UserSummary[]> {
+  const { data } = await api.get<UserSummary[]>('/users')
+  return data
+}
+
 export async function getUser(id: string): Promise<User> {
   const { data } = await api.get<User>(`/users/${id}`)
   return data
