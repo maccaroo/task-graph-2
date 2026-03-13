@@ -40,11 +40,11 @@
 [x] T9 - Add dependency constraint validation (predecessor end < task start)
 
 ## P6 - Notifications API & WebSockets
-[ ] T1 - Implement GET /notifications (list notifications for current user)
-[ ] T2 - Implement PUT /notifications/{id}/read (mark notification as read)
-[ ] T3 - Set up WebSocket server and connection management
-[ ] T4 - Emit `notification` event to connected clients in real time
-[ ] T5 - Implement automatic assignment notification on task assignee change
+[x] T1 - Implement GET /notifications (list notifications for current user)
+[x] T2 - Implement PUT /notifications/{id}/read (mark notification as read)
+[x] T3 - Set up WebSocket server and connection management
+[x] T4 - Emit `notification` event to connected clients in real time
+[x] T5 - Implement automatic assignment notification on task assignee change
 
 ## P7 - UI Foundation
 [ ] T1 - Configure central styling system (theme, colours, typography)

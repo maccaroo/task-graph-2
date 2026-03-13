@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Moq;
 using TaskGraph.Api.Data;
 using TaskGraph.Api.DTOs.Tasks;
 using TaskGraph.Api.Exceptions;
@@ -18,10 +19,13 @@ public class TaskServiceTests
         return new AppDbContext(options);
     }
 
-    private static (TaskService service, AppDbContext db) CreateService()
+    private static (TaskService service, AppDbContext db, Mock<INotificationService> notifications) CreateService()
     {
         var db = CreateDb();
-        return (new TaskService(db), db);
+        var notifications = new Mock<INotificationService>();
+        notifications.Setup(n => n.CreateAsync(It.IsAny<Guid>(), It.IsAny<NotificationType>(), It.IsAny<Guid?>(), It.IsAny<string>()))
+            .Returns(System.Threading.Tasks.Task.CompletedTask);
+        return (new TaskService(db, notifications.Object), db, notifications);
     }
 
     private static async Task<User> SeedUser(AppDbContext db, string username = "alice")
@@ -74,7 +78,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_NoFilter_ReturnsAllTasks()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "Task 1");
         await SeedTask(db, "Task 2");
 
@@ -86,7 +90,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByAssigneeId_ReturnsMatchingTasks()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var user = await SeedUser(db);
         await SeedTask(db, "Assigned", assigneeId: user.Id);
         await SeedTask(db, "Unassigned");
@@ -100,7 +104,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByPriority_ReturnsMatchingTasks()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "High", priority: TaskPriority.High);
         await SeedTask(db, "Low", priority: TaskPriority.Low);
 
@@ -113,7 +117,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByStatus_ReturnsMatchingTasks()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "Complete", status: TaskStatus.Complete);
         await SeedTask(db, "Incomplete", status: TaskStatus.Incomplete);
 
@@ -126,7 +130,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByTags_AllTagsMustMatch()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "Both Tags", tags: ["backend", "urgent"]);
         await SeedTask(db, "One Tag", tags: ["backend"]);
         await SeedTask(db, "No Tags");
@@ -140,7 +144,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByDueStatus_Overdue_ReturnsIncompleteWithPastEndDate()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var pastDate = DateTime.UtcNow.AddDays(-2);
         await SeedTask(db, "Overdue", status: TaskStatus.Incomplete, endType: TimingType.Fixed, endDate: pastDate);
         await SeedTask(db, "Complete Past", status: TaskStatus.Complete, endType: TimingType.Fixed, endDate: pastDate);
@@ -155,7 +159,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByDueStatus_DueSoon_ReturnsTasksDueWithin7Days()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "Due Soon", endType: TimingType.Fixed, endDate: DateTime.UtcNow.AddDays(3));
         await SeedTask(db, "Upcoming", endType: TimingType.Fixed, endDate: DateTime.UtcNow.AddDays(10));
         await SeedTask(db, "No End Date");
@@ -169,7 +173,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByDueStatus_Upcoming_ReturnsTasksDueAfter7Days()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "Upcoming", endType: TimingType.Fixed, endDate: DateTime.UtcNow.AddDays(10));
         await SeedTask(db, "Due Soon", endType: TimingType.Fixed, endDate: DateTime.UtcNow.AddDays(3));
         await SeedTask(db, "No End Date");
@@ -183,7 +187,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByDueStatus_NoDueDate_ReturnsTasksWithNoEndDate()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         await SeedTask(db, "No End Date");
         await SeedTask(db, "Has End Date", endType: TimingType.Fixed, endDate: DateTime.UtcNow.AddDays(5));
 
@@ -196,7 +200,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByFromDate_ExcludesTasksEndingBefore()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var fromDate = DateTime.UtcNow;
         await SeedTask(db, "After", endType: TimingType.Fixed, endDate: fromDate.AddDays(2));
         await SeedTask(db, "Before", endType: TimingType.Fixed, endDate: fromDate.AddDays(-2));
@@ -210,7 +214,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetAll_FilterByToDate_ExcludesTasksStartingAfter()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var toDate = DateTime.UtcNow;
         await SeedTask(db, "Before", startType: TimingType.Fixed, startDate: toDate.AddDays(-2));
         await SeedTask(db, "After", startType: TimingType.Fixed, startDate: toDate.AddDays(2));
@@ -226,7 +230,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetById_ExistingId_ReturnsTask()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "My Task");
 
         var result = await service.GetByIdAsync(task.Id);
@@ -238,7 +242,7 @@ public class TaskServiceTests
     [Fact]
     public async Task GetById_UnknownId_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.GetByIdAsync(Guid.NewGuid()));
@@ -249,7 +253,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Create_WithTitle_CreatesTask()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         var result = await service.CreateAsync(new CreateTaskRequest("New Task"));
 
@@ -260,7 +264,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Create_WithAssignee_IncludesAssigneeUsername()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var user = await SeedUser(db, "alice");
 
         var result = await service.CreateAsync(new CreateTaskRequest("Task", AssigneeId: user.Id));
@@ -274,7 +278,7 @@ public class TaskServiceTests
     [InlineData("   ")]
     public async Task Create_BlankTitle_ThrowsValidation(string title)
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<ValidationException>(() =>
             service.CreateAsync(new CreateTaskRequest(title)));
@@ -283,7 +287,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Create_UnknownAssigneeId_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.CreateAsync(new CreateTaskRequest("Task", AssigneeId: Guid.NewGuid())));
@@ -294,7 +298,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Update_ValidRequest_UpdatesFields()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Old Title");
 
         var result = await service.UpdateAsync(task.Id, new UpdateTaskRequest(
@@ -313,7 +317,7 @@ public class TaskServiceTests
     [InlineData("   ")]
     public async Task Update_BlankTitle_ThrowsValidation(string title)
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db);
 
         await Assert.ThrowsAsync<ValidationException>(() =>
@@ -325,7 +329,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Update_UnknownTaskId_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.UpdateAsync(Guid.NewGuid(), new UpdateTaskRequest(
@@ -336,7 +340,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Update_UnknownAssigneeId_ThrowsNotFound()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db);
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -350,7 +354,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Delete_ExistingTask_RemovesTask()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db);
 
         await service.DeleteAsync(task.Id);
@@ -361,7 +365,7 @@ public class TaskServiceTests
     [Fact]
     public async Task Delete_UnknownId_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.DeleteAsync(Guid.NewGuid()));
@@ -372,7 +376,7 @@ public class TaskServiceTests
     [Fact]
     public async Task UpdatePosition_SetsXAndY()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db);
 
         var result = await service.UpdatePositionAsync(task.Id, new UpdateTaskPositionRequest(10.5, 20.3));
@@ -385,7 +389,7 @@ public class TaskServiceTests
     [Fact]
     public async Task UpdatePosition_UnknownId_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.UpdatePositionAsync(Guid.NewGuid(), new UpdateTaskPositionRequest(0, 0)));
@@ -396,7 +400,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_ValidRelationship_PredecessorIdInResponse()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
 
@@ -408,7 +412,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_SelfReference_ThrowsValidation()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db);
 
         await Assert.ThrowsAsync<ValidationException>(() =>
@@ -418,7 +422,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_AlreadyExists_ThrowsConflict()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
 
@@ -431,7 +435,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_UnknownTaskId_ThrowsNotFound()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var predecessor = await SeedTask(db, "Predecessor");
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -441,7 +445,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_UnknownPredecessorId_ThrowsNotFound()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Task");
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
@@ -451,7 +455,7 @@ public class TaskServiceTests
     [Fact]
     public async Task AddPredecessor_PredecessorEndsAfterTaskStarts_ThrowsValidation()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var now = DateTime.UtcNow;
         var task = await SeedTask(db, "Task",
             startType: TimingType.Fixed, startDate: now.AddDays(1));
@@ -467,7 +471,7 @@ public class TaskServiceTests
     [Fact]
     public async Task DeletePredecessor_ExistingRelationship_RemovesIt()
     {
-        var (service, db) = CreateService();
+        var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
         await service.AddPredecessorAsync(task.Id, predecessor.Id);
@@ -482,9 +486,39 @@ public class TaskServiceTests
     [Fact]
     public async Task DeletePredecessor_UnknownRelationship_ThrowsNotFound()
     {
-        var (service, _) = CreateService();
+        var (service, _, __) = CreateService();
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
             service.DeletePredecessorAsync(Guid.NewGuid(), Guid.NewGuid()));
+    }
+
+    // --- Assignment notification ---
+
+    [Fact]
+    public async Task Update_AssigneeChanged_SendsNotification()
+    {
+        var (service, db, notifications) = CreateService();
+        var user = await SeedUser(db);
+        var task = await SeedTask(db);
+
+        await service.UpdateAsync(task.Id, new UpdateTaskRequest(
+            task.Title, null, user.Id, TaskStatus.Incomplete, TaskPriority.Medium, [], TimingType.None, null, TimingType.None, null, null));
+
+        notifications.Verify(n => n.CreateAsync(
+            user.Id, NotificationType.AssignmentAlert, task.Id, It.IsAny<string>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Update_AssigneeUnchanged_NoNotification()
+    {
+        var (service, db, notifications) = CreateService();
+        var user = await SeedUser(db);
+        var task = await SeedTask(db, assigneeId: user.Id);
+
+        await service.UpdateAsync(task.Id, new UpdateTaskRequest(
+            task.Title, null, user.Id, TaskStatus.Incomplete, TaskPriority.Medium, [], TimingType.None, null, TimingType.None, null, null));
+
+        notifications.Verify(n => n.CreateAsync(
+            It.IsAny<Guid>(), It.IsAny<NotificationType>(), It.IsAny<Guid?>(), It.IsAny<string>()), Times.Never);
     }
 }

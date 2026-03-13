@@ -7,7 +7,7 @@ using TaskStatus = TaskGraph.Api.Models.TaskStatus;
 
 namespace TaskGraph.Api.Services;
 
-public class TaskService(AppDbContext db) : ITaskService
+public class TaskService(AppDbContext db, INotificationService notificationService) : ITaskService
 {
     public async Task<IEnumerable<TaskResponse>> GetAllAsync(TaskFilter filter)
     {
@@ -94,6 +94,7 @@ public class TaskService(AppDbContext db) : ITaskService
             throw new ValidationException("Title is required.");
 
         var task = await LoadTaskAsync(id);
+        var oldAssigneeId = task.AssigneeId;
 
         if (request.AssigneeId.HasValue && !await db.Users.AnyAsync(u => u.Id == request.AssigneeId.Value))
             throw new NotFoundException($"User {request.AssigneeId.Value} not found.");
@@ -111,6 +112,14 @@ public class TaskService(AppDbContext db) : ITaskService
         task.Duration = request.Duration;
 
         await db.SaveChangesAsync();
+
+        if (task.AssigneeId.HasValue && task.AssigneeId != oldAssigneeId)
+            await notificationService.CreateAsync(
+                task.AssigneeId.Value,
+                NotificationType.AssignmentAlert,
+                task.Id,
+                $"You have been assigned to \"{task.Title}\".");
+
         return ToResponse(await LoadTaskAsync(id));
     }
 
