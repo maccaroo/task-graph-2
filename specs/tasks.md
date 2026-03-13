@@ -15,12 +15,12 @@
 [x] T4 - Create Notifications table (id, user_id, type, task_id, message, is_read, created_at)
 
 ## P3 - Authentication API
-[ ] T1 - Implement POST /auth/register (validate fields, hash password, create user)
-[ ] T2 - Implement POST /auth/login (validate credentials, return JWT)
-[ ] T3 - Implement POST /auth/logout
-[ ] T4 - Implement POST /auth/password-reset-request (validate user exists, send reset email)
-[ ] T5 - Implement POST /auth/password-reset (validate token, update password)
-[ ] T6 - Add JWT middleware for protected routes
+[x] T1 - Implement POST /auth/register (validate fields, hash password, create user)
+[x] T2 - Implement POST /auth/login (validate credentials, return JWT)
+[x] T3 - Implement POST /auth/logout
+[x] T4 - Implement POST /auth/password-reset-request (validate user exists, send reset email)
+[x] T5 - Implement POST /auth/password-reset (validate token, update password)
+[x] T6 - Add JWT middleware for protected routes
 
 ## P4 - Users API
 [ ] T1 - Implement GET /users (list all users with task count summary by status)
