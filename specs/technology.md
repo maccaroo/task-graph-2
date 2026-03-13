@@ -9,6 +9,11 @@ Web UI:
 
 API:
 - C#.Net
+- REST
+- WebSockets (real-time notifications)
+
+Authentication:
+- JWT (Bearer tokens)
 
 Persistence
 - PostgreSQL

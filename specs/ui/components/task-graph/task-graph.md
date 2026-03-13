@@ -33,6 +33,8 @@ For details of the time axis, see `time-axis.md`.
 A floating panel allows the user to filter the displayed tasks by some attribute.  The user may select from:
 - Text search (title or description)
 - Assignee
+- Priority
+- Tags
 - Completion status
 - Due status
 - Start date
@@ -50,3 +52,4 @@ An action panel is present at the bottom of the graph panel.
 
 It contains buttons for:
 - Add task
+- Toggle open-ended tasks (show/hide tasks with no timing constraints)

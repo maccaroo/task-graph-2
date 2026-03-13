@@ -48,10 +48,6 @@ It shows the following:
 - A notifications counter
     - A notificatin icon
     - An indicator of the number of unread notifications
-- Filters
-    - (TODO: Add feature description)
-- A search bar 
-    - (TODO: Add feature description)
 
 **Behaviour**:
 - **When** the user clicks on the logged in user
@@ -66,3 +62,10 @@ It shows the following:
 A list of notifications for the user.
 
 This component appears as a popup over the application.
+
+Each notification shows:
+- Type (reminder | assignment)
+- Task title (hyperlink)
+- Timestamp
+
+Notifications are delivered in real-time via WebSocket.  Clicking a notification marks it as read (fulfilled) and navigates to the task.
