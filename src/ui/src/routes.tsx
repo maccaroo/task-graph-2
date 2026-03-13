@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
+import { AppShell } from './layouts/AppShell'
 import { ROUTES } from './routeConstants'
 import { LoginView } from './views/auth/LoginView'
 import { PasswordResetRequestView } from './views/auth/PasswordResetRequestView'
@@ -23,11 +24,16 @@ export const router = createBrowserRouter([
   { path: ROUTES.PASSWORD_RESET_REQUEST, element: <PasswordResetRequestView /> },
   { path: ROUTES.PASSWORD_RESET, element: <PasswordResetView /> },
 
-  // Protected routes
+  // Protected routes — wrapped in AuthGuard + AppShell (Statusbar)
   {
     element: <AuthGuard />,
     children: [
-      { path: ROUTES.DASHBOARD, element: <Placeholder name="Dashboard" /> },
+      {
+        element: <AppShell />,
+        children: [
+          { path: ROUTES.DASHBOARD, element: <Placeholder name="Dashboard" /> },
+        ],
+      },
     ],
   },
 ])
