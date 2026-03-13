@@ -67,10 +67,10 @@
 [x] T4 - Notifications click → open Notification List popup
 
 ## P10 - User Profile Component
-[ ] T1 - Build User Profile popup (avatar, username read-only, first/last name, email)
-[ ] T2 - Avatar upload (square crop, max 10MB)
-[ ] T3 - Editable first name, last name, email fields with save
-[ ] T4 - Reset password button (triggers password-reset-request flow)
+[x] T1 - Build User Profile popup (avatar, username read-only, first/last name, email)
+[x] T2 - Avatar upload (square crop, max 10MB)
+[x] T3 - Editable first name, last name, email fields with save
+[x] T4 - Reset password button (triggers password-reset-request flow)
 
 ## P11 - Notifications Component
 [ ] T1 - Build Notification List popup (type, task title hyperlink, timestamp)
