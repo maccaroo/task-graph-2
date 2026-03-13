@@ -47,11 +47,11 @@
 [x] T5 - Implement automatic assignment notification on task assignee change
 
 ## P7 - UI Foundation
-[ ] T1 - Configure central styling system (theme, colours, typography)
-[ ] T2 - Define reusable base components (Button, Input, Modal, Panel, etc.)
-[ ] T3 - Set up React Router with route definitions
-[ ] T4 - Set up API client (axios/fetch with JWT header injection)
-[ ] T5 - Set up WebSocket client with reconnection handling
+[x] T1 - Configure central styling system (theme, colours, typography)
+[x] T2 - Define reusable base components (Button, Input, Modal, Panel, etc.)
+[x] T3 - Set up React Router with route definitions
+[x] T4 - Set up API client (axios/fetch with JWT header injection)
+[x] T5 - Set up WebSocket client with reconnection handling
 
 ## P8 - Authentication UI
 [ ] T1 - Build Login view (logo, username, password, links to register/forgot)

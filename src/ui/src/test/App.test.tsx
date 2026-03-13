@@ -1,9 +1,16 @@
 import { render } from '@testing-library/react'
-import App from '../App'
+import { MemoryRouter } from 'react-router-dom'
+import { AuthProvider } from '../contexts/AuthContext'
 
 describe('App', () => {
   it('renders without crashing', () => {
-    const { container } = render(<App />)
+    const { container } = render(
+      <AuthProvider>
+        <MemoryRouter>
+          <div />
+        </MemoryRouter>
+      </AuthProvider>
+    )
     expect(container).toBeTruthy()
   })
 })
