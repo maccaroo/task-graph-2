@@ -106,8 +106,7 @@
   top: 50%;
   transform: translateY(-50%);
   width: 18px;
-  height: 18px;
-  border-radius: 50%;
+  height: 42px;
   background: var(--color-surface);
   border: 2px solid var(--color-border-strong);
   cursor: crosshair;
@@ -125,10 +124,12 @@
 
 .widgetLeft {
   left: -11px;
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
 .widgetRight {
   right: -11px;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
 .card:hover .widgetLeft,
