@@ -20,7 +20,7 @@ interface UserProfileModalProps {
 export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
   const navigate = useNavigate()
   const { userId } = useAuth()
-  const { user, loading, refresh } = useCurrentUser()
+  const { user, loading, avatarVersion, refresh } = useCurrentUser()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -28,7 +28,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
 
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
-  const [saveSuccess, setSaveSuccess] = useState(false)
 
   const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [avatarError, setAvatarError] = useState('')
@@ -36,14 +35,17 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Populate form when user data arrives
+  // Populate form fields when the modal opens.
+  // Intentionally NOT re-syncing on every `user` change: a background refresh
+  // (e.g. after avatar upload) must not overwrite unsaved edits in the form.
   useEffect(() => {
-    if (user) {
+    if (open && user) {
       setFirstName(user.firstName)
       setLastName(user.lastName)
       setEmail(user.email)
     }
-  }, [user])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 
   // Reset transient state whenever modal closes
   useEffect(() => {
@@ -51,7 +53,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
       setPendingFile(null)
       setAvatarError('')
       setSaveError('')
-      setSaveSuccess(false)
     }
   }, [open])
 
@@ -86,7 +87,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
   async function handleSave(e: FormEvent) {
     e.preventDefault()
     setSaveError('')
-    setSaveSuccess(false)
 
     if (!firstName.trim()) { setSaveError('First name is required.'); return }
     if (!NAME_RE.test(firstName.trim())) { setSaveError('First name contains invalid characters.'); return }
@@ -104,7 +104,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
         email: email.trim(),
       })
       await refresh()
-      setSaveSuccess(true)
+      onClose()
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Save failed.')
     } finally {
@@ -140,7 +140,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
               type="button"
             >
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className={styles.avatar} />
+                <img src={`${user.avatarUrl}?v=${avatarVersion}`} alt="Avatar" className={styles.avatar} />
               ) : (
                 <span className={styles.avatarFallback} aria-hidden="true">
                   {user
@@ -166,7 +166,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
           {/* Profile form */}
           <form onSubmit={handleSave} className={styles.form} noValidate>
             {saveError && <p className={styles.formError} role="alert">{saveError}</p>}
-            {saveSuccess && <p className={styles.formSuccess} role="status">Profile saved.</p>}
 
             <Input
               label="Username"
@@ -179,13 +178,13 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
               <Input
                 label="First name"
                 value={firstName}
-                onChange={e => { setFirstName(e.target.value); setSaveSuccess(false) }}
+                onChange={e => setFirstName(e.target.value)}
                 autoComplete="given-name"
               />
               <Input
                 label="Last name"
                 value={lastName}
-                onChange={e => { setLastName(e.target.value); setSaveSuccess(false) }}
+                onChange={e => setLastName(e.target.value)}
                 autoComplete="family-name"
               />
             </div>
@@ -194,7 +193,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
               label="Email"
               type="email"
               value={email}
-              onChange={e => { setEmail(e.target.value); setSaveSuccess(false) }}
+              onChange={e => setEmail(e.target.value)}
               autoComplete="email"
             />
 

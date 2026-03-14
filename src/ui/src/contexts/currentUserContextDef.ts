@@ -4,6 +4,7 @@ import type { User } from '../services/users'
 export interface CurrentUserContextValue {
   user: User | null
   loading: boolean
+  avatarVersion: number
   refresh: () => Promise<void>
 }
 

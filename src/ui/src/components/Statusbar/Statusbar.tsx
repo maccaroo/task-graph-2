@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useNotifications } from '../../hooks/useNotifications'
@@ -14,7 +14,7 @@ interface StatusbarProps {
 export function Statusbar({ onOpenProfile }: StatusbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
-  const { user } = useCurrentUser()
+  const { user, avatarVersion } = useCurrentUser()
   const { notifications, unreadCount, refresh, setNotifications } = useNotifications()
 
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -68,6 +68,20 @@ export function Statusbar({ onOpenProfile }: StatusbarProps) {
     <header className={styles.statusbar} role="banner">
       <div className={styles.left}>
         <span className={styles.appName}>TaskGraph</span>
+        <nav className={styles.nav} aria-label="Main navigation">
+          <NavLink
+            to={ROUTES.TASKS}
+            className={({ isActive }) => `${styles.navLink}${isActive ? ` ${styles.navLinkActive}` : ''}`}
+          >
+            Tasks
+          </NavLink>
+          <NavLink
+            to={ROUTES.TASK_GRAPH}
+            className={({ isActive }) => `${styles.navLink}${isActive ? ` ${styles.navLinkActive}` : ''}`}
+          >
+            Graph
+          </NavLink>
+        </nav>
       </div>
 
       <div className={styles.right}>
@@ -107,7 +121,7 @@ export function Statusbar({ onOpenProfile }: StatusbarProps) {
             }}
           >
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl} alt="" className={styles.avatar} />
+              <img src={`${user.avatarUrl}?v=${avatarVersion}`} alt="" className={styles.avatar} />
             ) : (
               <span className={styles.avatarFallback} aria-hidden="true">
                 {user ? initials(user.firstName, user.lastName) : '?'}

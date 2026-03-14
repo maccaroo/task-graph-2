@@ -113,10 +113,10 @@ export function AvatarCropPicker({ file, uploading, onConfirm, onCancel }: Avata
       </div>
 
       <div className={styles.actions}>
-        <Button variant="secondary" onClick={onCancel} disabled={uploading}>
+        <Button type="button" variant="secondary" onClick={onCancel} disabled={uploading}>
           Cancel
         </Button>
-        <Button onClick={handleConfirm} disabled={uploading || !crop}>
+        <Button type="button" onClick={handleConfirm} disabled={uploading || !crop}>
           {uploading ? 'Uploading…' : 'Crop & upload'}
         </Button>
       </div>

@@ -8,12 +8,15 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   // Start as loading only when there is a userId to fetch; avoids synchronous setState in effect
   const [loading, setLoading] = useState(() => !!userId)
+  // Incremented on every refresh so avatar <img> src cache-busting works
+  const [avatarVersion, setAvatarVersion] = useState(0)
 
   const refresh = useCallback(async () => {
     if (!userId) return
     setLoading(true)
     try {
       setUser(await getUser(userId))
+      setAvatarVersion(v => v + 1)
     } catch {
       // silently fail — auth guard will redirect if session is truly invalid
     } finally {
@@ -27,7 +30,7 @@ export function CurrentUserProvider({ children }: { children: ReactNode }) {
   }, [refresh, userId])
 
   return (
-    <CurrentUserContext.Provider value={{ user, loading, refresh }}>
+    <CurrentUserContext.Provider value={{ user, loading, avatarVersion, refresh }}>
       {children}
     </CurrentUserContext.Provider>
   )
