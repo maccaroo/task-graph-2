@@ -213,7 +213,7 @@ export function TaskGraph() {
 
   const arrows = useMemo(() => {
     const filteredIds = new Set(filtered.map(t => t.id))
-    const result: { id: string; d: string; dashed: boolean }[] = []
+    const result: { id: string; fromId: string; toId: string; d: string; dashed: boolean }[] = []
     for (const task of filtered) {
       const toPos = positions.get(task.id)
       if (!toPos) continue
@@ -223,7 +223,7 @@ export function TaskGraph() {
         const x1 = fromPos.x + CARD_WIDTH, y1 = fromPos.y + CARD_HEIGHT / 2
         const x2 = toPos.x,                y2 = toPos.y  + CARD_HEIGHT / 2
         const cx = (x1 + x2) / 2
-        result.push({ id: `${predId}->${task.id}`, d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`, dashed: !filteredIds.has(predId) })
+        result.push({ id: `${predId}->${task.id}`, fromId: predId, toId: task.id, d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`, dashed: !filteredIds.has(predId) })
       }
     }
     return result
@@ -456,15 +456,25 @@ export function TaskGraph() {
               <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-border-strong)" />
               </marker>
+              <marker id="arrowhead-highlighted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
+              </marker>
               <marker id="arrowhead-drag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
               </marker>
             </defs>
-            {arrows.map(a => (
-              <path key={a.id} d={a.d} fill="none" stroke="var(--color-border-strong)"
-                strokeWidth="1.5" strokeDasharray={a.dashed ? '4 4' : undefined}
-                markerEnd="url(#arrowhead)" opacity="0.6" />
-            ))}
+            {arrows.map(a => {
+              const highlighted = selectedTaskId !== null && (a.fromId === selectedTaskId || a.toId === selectedTaskId)
+              const dimmed = selectedTaskId !== null && !highlighted
+              return (
+                <path key={a.id} d={a.d} fill="none"
+                  stroke={highlighted ? 'var(--color-primary)' : 'var(--color-border-strong)'}
+                  strokeWidth={highlighted ? 2.5 : 1.5}
+                  strokeDasharray={a.dashed ? '4 4' : undefined}
+                  markerEnd={highlighted ? 'url(#arrowhead-highlighted)' : 'url(#arrowhead)'}
+                  opacity={highlighted ? 1 : dimmed ? 0.2 : 0.6} />
+              )
+            })}
             {dragLine && (
               <line x1={dragLine.x1} y1={dragLine.y1} x2={dragLine.x2} y2={dragLine.y2}
                 stroke="var(--color-primary)" strokeWidth="2" strokeDasharray="6 3"
