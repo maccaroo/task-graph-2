@@ -1,5 +1,6 @@
 import { createBrowserRouter } from 'react-router-dom'
 import { AuthGuard } from './components/AuthGuard'
+import { Placeholder } from './components/Placeholder'
 import { AppShell } from './layouts/AppShell'
 import { ROUTES } from './routeConstants'
 import { LoginView } from './views/auth/LoginView'
@@ -8,16 +9,6 @@ import { PasswordResetView } from './views/auth/PasswordResetView'
 import { RegisterView } from './views/auth/RegisterView'
 import { TaskListView } from './views/tasks/TaskListView'
 import { TaskGraphView } from './views/tasks/TaskGraphView'
-
-// Placeholder views — replaced in subsequent phases
-function Placeholder({ name }: { name: string }) {
-  return (
-    <div style={{ padding: '2rem', fontFamily: 'var(--font-sans)', color: 'var(--color-text)' }}>
-      <h1>{name}</h1>
-      <p style={{ color: 'var(--color-text-secondary)', marginTop: '0.5rem' }}>Coming soon</p>
-    </div>
-  )
-}
 
 export const router = createBrowserRouter([
   // Public routes

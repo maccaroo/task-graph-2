@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import type { Task } from '../../services/tasks'
 import {
   computeDueStatus,
@@ -15,6 +15,8 @@ interface TaskGraphItemProps {
   taskMap: Map<string, Task>
   x: number
   y: number
+  /** Rendered card width. Defaults to CARD_WIDTH. */
+  width?: number
   selected: boolean
   isDragTarget: boolean
   onSelect: (id: string) => void
@@ -50,12 +52,15 @@ function borderColors(task: Task): { startColor: string; endColor: string } {
   return { startColor: endColor, endColor }
 }
 
+const HOVER_EXPAND_DELAY_MS = 500
+
 // ── Component ─────────────────────────────────────────────────────────────
 
 export function TaskGraphItem({
   task,
   x,
   y,
+  width = CARD_WIDTH,
   selected,
   isDragTarget,
   onSelect,
@@ -68,11 +73,20 @@ export function TaskGraphItem({
   const isGradient = startColor !== endColor
 
   const dragRef = useRef<{ startX: number; startY: number } | null>(null)
+  const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [hoverExpanded, setHoverExpanded] = useState(false)
 
-  const hasPred = task.predecessorIds.length > 0
-  const hasSucc = task.successorIds.length > 0
+  const hasStartConstraint = Boolean(task.startDate)
+  const hasEndConstraint   = Boolean(task.endDate)
+  const bothConstrained    = hasStartConstraint && hasEndConstraint
 
-  // ── Card drag (reposition) ─────────────────────────────────────────────
+  // A card is "reduced" when both sides are constrained but span < standard width
+  const isReduced = bothConstrained && width < CARD_WIDTH
+
+  // Effective rendered width: expand on hover if reduced
+  const effectiveWidth = isReduced && hoverExpanded ? CARD_WIDTH : width
+
+  // ── Card drag (reposition) ───────────────────────────────────────────────
 
   function handleCardMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
@@ -100,7 +114,22 @@ export function TaskGraphItem({
     window.addEventListener('mouseup', onUp)
   }
 
-  // ── Relation widget drag (create predecessor/successor) ────────────────
+  // ── Hover expand (reduced cards only) ────────────────────────────────────
+
+  function handleMouseEnter() {
+    if (!isReduced) return
+    hoverTimerRef.current = setTimeout(() => setHoverExpanded(true), HOVER_EXPAND_DELAY_MS)
+  }
+
+  function handleMouseLeave() {
+    if (hoverTimerRef.current) {
+      clearTimeout(hoverTimerRef.current)
+      hoverTimerRef.current = null
+    }
+    setHoverExpanded(false)
+  }
+
+  // ── Relation widget drag (create predecessor/successor) ──────────────────
 
   function handleWidgetMouseDown(e: React.MouseEvent, type: RelationDragType) {
     e.stopPropagation()
@@ -108,27 +137,39 @@ export function TaskGraphItem({
     onRelationDragStart(task.id, type, e.clientX, e.clientY)
   }
 
-  // ── Style ─────────────────────────────────────────────────────────────
+  // ── Style ────────────────────────────────────────────────────────────────
 
   const cardStyle = {
     left: x,
     top: y,
-    width: CARD_WIDTH,
+    width: effectiveWidth,
     '--start-color': startColor,
     '--end-color': endColor,
     '--status-color': DUE_STATUS_COLOR_VAR[dueStatus],
   } as React.CSSProperties
 
+  const classNames = [
+    styles.card,
+    isGradient           ? styles.gradient    : '',
+    selected             ? styles.selected    : '',
+    isDragTarget         ? styles.dragTarget  : '',
+    hasStartConstraint   ? styles.constrainedStart   : styles.unconstrainedStart,
+    hasEndConstraint     ? styles.constrainedEnd     : styles.unconstrainedEnd,
+    isReduced            ? styles.reduced     : '',
+    hoverExpanded        ? styles.expanded    : '',
+  ].filter(Boolean).join(' ')
+
+  // For wide both-constrained cards, content is standard width and centred,
+  // but sticks to the visible portion when the card overflows the viewport.
+  const showWideContent = bothConstrained && width >= CARD_WIDTH
+
   return (
     <div
-      className={[
-        styles.card,
-        isGradient ? styles.gradient : '',
-        selected    ? styles.selected   : '',
-        isDragTarget ? styles.dragTarget : '',
-      ].filter(Boolean).join(' ')}
+      className={classNames}
       style={cardStyle}
       onMouseDown={handleCardMouseDown}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       role="button"
       tabIndex={0}
       aria-label={task.title}
@@ -137,9 +178,9 @@ export function TaskGraphItem({
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(task.id) }
       }}
     >
-      {/* ── Predecessor widget (left) T4 ── */}
+      {/* ── Predecessor widget (start side) T4 ── */}
       <div
-        className={styles.widgetLeft}
+        className={styles.widgetStart}
         title="Drag to set a predecessor"
         onMouseDown={e => handleWidgetMouseDown(e, 'predecessor')}
         aria-label="Add predecessor"
@@ -149,9 +190,9 @@ export function TaskGraphItem({
         ◀
       </div>
 
-      {/* ── Successor widget (right) T5 ── */}
+      {/* ── Successor widget (end side) T5 ── */}
       <div
-        className={styles.widgetRight}
+        className={styles.widgetEnd}
         title="Drag to set a successor"
         onMouseDown={e => handleWidgetMouseDown(e, 'successor')}
         aria-label="Add successor"
@@ -162,17 +203,21 @@ export function TaskGraphItem({
       </div>
 
       {/* ── Card content ── */}
-      <div className={styles.title} title={task.title}>{task.title}</div>
+      <div className={showWideContent ? styles.wideContent : styles.content}>
+        <div className={styles.title} title={task.title}>{task.title}</div>
 
-      <div className={styles.meta}>
-        {(hasPred || hasSucc) && (
-          <span className={styles.deps}>
-            {hasPred && `← ${task.predecessorIds.length}`}
-            {hasPred && hasSucc && '  '}
-            {hasSucc && `${task.successorIds.length} →`}
-          </span>
+        {!isReduced && (
+          <div className={styles.meta}>
+            {(task.predecessorIds.length > 0 || task.successorIds.length > 0) && (
+              <span className={styles.deps}>
+                {task.predecessorIds.length > 0 && `← ${task.predecessorIds.length}`}
+                {task.predecessorIds.length > 0 && task.successorIds.length > 0 && '  '}
+                {task.successorIds.length > 0 && `${task.successorIds.length} →`}
+              </span>
+            )}
+            {timeLabel && <span className={styles.timeLabel}>{timeLabel}</span>}
+          </div>
         )}
-        {timeLabel && <span className={styles.timeLabel}>{timeLabel}</span>}
       </div>
     </div>
   )

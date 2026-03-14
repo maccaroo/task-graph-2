@@ -1,14 +1,7 @@
-import { createContext, useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { type User, getUser } from '../services/users'
 import { useAuth } from '../hooks/useAuth'
-
-export interface CurrentUserContextValue {
-  user: User | null
-  loading: boolean
-  refresh: () => Promise<void>
-}
-
-export const CurrentUserContext = createContext<CurrentUserContextValue | null>(null)
+import { CurrentUserContext } from './currentUserContextDef'
 
 export function CurrentUserProvider({ children }: { children: ReactNode }) {
   const { userId } = useAuth()

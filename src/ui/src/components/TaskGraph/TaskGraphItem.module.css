@@ -3,17 +3,16 @@
 .card {
   position: absolute;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  align-items: stretch;
+  gap: 0;
   background: var(--color-surface-raised);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   cursor: grab;
   user-select: none;
-  transition: box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition: box-shadow var(--transition-fast), transform var(--transition-fast),
+    width var(--transition-fast);
   overflow: visible;
-  border: 3px solid var(--start-color, var(--color-border));
   height: 52px;
   box-sizing: border-box;
 }
@@ -29,11 +28,6 @@
 }
 
 /* ── Gradient border (T6) ─────────────────────────── */
-
-.gradient {
-  border: none;
-  position: relative;
-}
 
 .gradient::before {
   content: '';
@@ -55,6 +49,66 @@
   pointer-events: none;
 }
 
+/* ── Constrained/unconstrained buffers ────────────── */
+
+/* Solid buffer: a thick coloured cap on a constrained side */
+.constrainedStart {
+  border-left: 4px solid var(--start-color, var(--color-border));
+  border-top: 2px solid var(--start-color, var(--color-border));
+  border-bottom: 2px solid var(--start-color, var(--color-border));
+  border-right: none;
+  border-radius: var(--radius-md);
+}
+
+.constrainedEnd {
+  border-right: 4px solid var(--end-color, var(--color-border));
+  border-top: 2px solid var(--end-color, var(--color-border));
+  border-bottom: 2px solid var(--end-color, var(--color-border));
+  border-left: none;
+  border-radius: var(--radius-md);
+}
+
+.constrainedStart.constrainedEnd {
+  border: 2px solid var(--start-color, var(--color-border));
+  border-left-width: 4px;
+  border-right-color: var(--end-color, var(--color-border));
+  border-right-width: 4px;
+}
+
+/* Soft buffer: gradient fade-out on an unconstrained side */
+.unconstrainedStart::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 16px;
+  height: 100%;
+  background: linear-gradient(to right, transparent, var(--color-surface-raised));
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.unconstrainedEnd::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 16px;
+  height: 100%;
+  background: linear-gradient(to left, transparent, var(--color-surface-raised));
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Override gradient border pseudo-elements when unconstrained */
+.gradient.unconstrainedStart::before,
+.gradient.unconstrainedEnd::after {
+  /* gradient border's ::before/::after handles outer glow; keep soft fades distinct */
+  z-index: 2;
+}
+
 /* ── Selection & drag-target states ───────────────── */
 
 .selected {
@@ -68,7 +122,46 @@
   transform: scale(1.03);
 }
 
-/* ── Content ──────────────────────────────────────── */
+/* ── Reduced & expanded states (T10) ──────────────── */
+
+.reduced .meta {
+  display: none;
+}
+
+.expanded {
+  z-index: 10 !important;
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Content wrapper ──────────────────────────────── */
+
+/* Standard content (single-constrained or open-ended) */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Wide content (both-constrained, span ≥ CARD_WIDTH):
+   centred at standard width, sticks to visible area via sticky */
+.wideContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  width: 180px; /* CARD_WIDTH — mirrors the TS constant */
+  min-width: 0;
+  flex-shrink: 0;
+  position: sticky;
+  left: 4px;   /* stay inside the card's border */
+  overflow: hidden;
+}
+
+/* ── Title & meta ─────────────────────────────────── */
 
 .title {
   font-size: var(--text-sm);
@@ -100,8 +193,8 @@
 
 /* ── Relation drag widgets (T4, T5) ───────────────── */
 
-.widgetLeft,
-.widgetRight {
+.widgetStart,
+.widgetEnd {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
@@ -122,23 +215,23 @@
   pointer-events: all;
 }
 
-.widgetLeft {
+.widgetStart {
   left: -11px;
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
-.widgetRight {
+.widgetEnd {
   right: -11px;
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-.card:hover .widgetLeft,
-.card:hover .widgetRight {
+.card:hover .widgetStart,
+.card:hover .widgetEnd {
   opacity: 1;
 }
 
-.widgetLeft:hover,
-.widgetRight:hover {
+.widgetStart:hover,
+.widgetEnd:hover {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-text-inverse);

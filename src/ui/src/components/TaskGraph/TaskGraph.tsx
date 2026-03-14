@@ -16,7 +16,6 @@ import { TaskGraphItem, type RelationDragType } from './TaskGraphItem'
 import {
   CANVAS_PAD_Y,
   CARD_HEIGHT,
-  CARD_WIDTH,
   MS_PER_DAY,
   ROW_HEIGHT,
   computeAutoLayout,
@@ -24,6 +23,7 @@ import {
   computeViewRange,
   dateToX,
   xToDate,
+  type TaskPosition,
 } from './graphLayout'
 import styles from './TaskGraph.module.css'
 
@@ -119,7 +119,7 @@ export function TaskGraph() {
   const [dragTargetId, setDragTargetId] = useState<string | null>(null)
   const dragTargetRef = useRef<string | null>(null)
 
-  const positionsRef = useRef<Map<string, { x: number; y: number }>>(new Map())
+  const positionsRef = useRef<Map<string, TaskPosition>>(new Map())
   const tasksRef = useRef<Task[]>([])
 
   const load = useCallback(async () => {
@@ -177,7 +177,8 @@ export function TaskGraph() {
   const positions = useMemo(() => {
     const map = new Map(autoPositions)
     for (const [id, pos] of pinnedPositions) {
-      if (map.has(id)) map.set(id, pos)
+      const auto = map.get(id)
+      if (auto) map.set(id, { ...auto, x: pos.x, y: pos.y })
     }
     return map
   }, [autoPositions, pinnedPositions])
@@ -220,8 +221,8 @@ export function TaskGraph() {
       for (const predId of task.predecessorIds) {
         const fromPos = positions.get(predId)
         if (!fromPos) continue
-        const x1 = fromPos.x + CARD_WIDTH, y1 = fromPos.y + CARD_HEIGHT / 2
-        const x2 = toPos.x,                y2 = toPos.y  + CARD_HEIGHT / 2
+        const x1 = fromPos.x + fromPos.width, y1 = fromPos.y + CARD_HEIGHT / 2
+        const x2 = toPos.x,                   y2 = toPos.y   + CARD_HEIGHT / 2
         const cx = (x1 + x2) / 2
         result.push({ id: `${predId}->${task.id}`, fromId: predId, toId: task.id, d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`, dashed: !filteredIds.has(predId) })
       }
@@ -234,7 +235,7 @@ export function TaskGraph() {
     const src = positionsRef.current.get(relationDrag.sourceId)
     if (!src) return null
     const isSucc = relationDrag.type === 'successor'
-    return { x1: isSucc ? src.x + CARD_WIDTH : src.x, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
+    return { x1: isSucc ? src.x + src.width : src.x, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
   }, [relationDrag])
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
@@ -283,11 +284,11 @@ export function TaskGraph() {
     const newPos = { x: current.x + dx, y: current.y + dy }
     const task = tasks.find(t => t.id === id)
     if (task) {
-      const newEnd   = xToDate(newPos.x + CARD_WIDTH, viewStart, pixelsPerDay)
+      const newEnd   = xToDate(newPos.x + current.width, viewStart, pixelsPerDay)
       const newStart = xToDate(newPos.x, viewStart, pixelsPerDay)
       for (const predId of task.predecessorIds) {
         const p = positions.get(predId)
-        if (p && newStart < xToDate(p.x + CARD_WIDTH, viewStart, pixelsPerDay)) return
+        if (p && newStart < xToDate(p.x + p.width, viewStart, pixelsPerDay)) return
       }
       for (const succId of task.successorIds) {
         const s = positions.get(succId)
@@ -319,7 +320,7 @@ export function TaskGraph() {
       let target: string | null = null
       for (const [id, pos] of positionsRef.current) {
         if (id === sourceId) continue
-        if (x >= pos.x && x <= pos.x + CARD_WIDTH && y >= pos.y && y <= pos.y + CARD_HEIGHT) { target = id; break }
+        if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + CARD_HEIGHT) { target = id; break }
       }
       dragTargetRef.current = target
       setDragTargetId(target)
@@ -492,6 +493,7 @@ export function TaskGraph() {
                 taskMap={taskMap}
                 x={pos.x}
                 y={pos.y}
+                width={pos.width}
                 selected={selectedTaskId === task.id}
                 isDragTarget={dragTargetId === task.id}
                 onSelect={setSelectedTaskId}

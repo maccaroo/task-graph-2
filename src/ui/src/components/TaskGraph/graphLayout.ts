@@ -63,6 +63,9 @@ function topologicalSort(tasks: Task[]): Task[] {
 export interface TaskPosition {
   x: number
   y: number
+  /** Rendered width of the card. Equal to CARD_WIDTH for single-constrained/unconstrained tasks;
+   *  equals the date span (in pixels) for both-constrained tasks. */
+  width: number
 }
 
 /** Returns the date at the end of the current Present period (start of next week). */
@@ -94,16 +97,34 @@ export function computeAutoLayout(
   const rowMaxX: number[] = []
 
   for (const task of allOrdered) {
-    const endX = task.endDate ? dateToX(task.endDate, viewStart, pixelsPerDay) : openEndedEndX
-    const cardLeft = endX - CARD_WIDTH
+    let cardLeft: number
+    let cardWidth: number
+
+    if (task.startDate && task.endDate) {
+      // Both constrained: span from start date to end date
+      const startX = dateToX(task.startDate, viewStart, pixelsPerDay)
+      const endX   = dateToX(task.endDate,   viewStart, pixelsPerDay)
+      cardLeft  = startX
+      cardWidth = endX - startX
+    } else if (task.startDate) {
+      // Start-only: start side aligns to start date, standard width
+      cardLeft  = dateToX(task.startDate, viewStart, pixelsPerDay)
+      cardWidth = CARD_WIDTH
+    } else {
+      // End-only or open-ended: end side aligns to endX, standard width
+      const endX = task.endDate ? dateToX(task.endDate, viewStart, pixelsPerDay) : openEndedEndX
+      cardLeft  = endX - CARD_WIDTH
+      cardWidth = CARD_WIDTH
+    }
 
     let row = 0
     while (row < rowMaxX.length && rowMaxX[row] > cardLeft - 16) row++
-    rowMaxX[row] = endX
+    rowMaxX[row] = cardLeft + cardWidth
 
     positions.set(task.id, {
       x: cardLeft,
       y: CANVAS_PAD_Y + row * ROW_HEIGHT,
+      width: cardWidth,
     })
   }
 

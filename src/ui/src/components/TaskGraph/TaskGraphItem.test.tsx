@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { TaskGraphItem } from './TaskGraphItem'
+import { CARD_WIDTH } from './graphLayout'
 import type { Task } from '../../services/tasks'
 
 const BASE: Task = {
@@ -26,17 +27,22 @@ function makeTask(overrides: Partial<Task>): Task {
   return { ...BASE, ...overrides }
 }
 
-function renderItem(task: Task, taskMap = new Map<string, Task>([[task.id, task]])) {
+function renderItem(
+  task: Task,
+  taskMap = new Map<string, Task>([[task.id, task]]),
+  width?: number,
+) {
   const onSelect = vi.fn()
   const onDragEnd = vi.fn()
   const onRelationDragStart = vi.fn()
 
-  render(
+  const result = render(
     <TaskGraphItem
       task={task}
       taskMap={taskMap}
       x={100}
       y={100}
+      width={width}
       selected={false}
       isDragTarget={false}
       onSelect={onSelect}
@@ -45,7 +51,7 @@ function renderItem(task: Task, taskMap = new Map<string, Task>([[task.id, task]
     />,
   )
 
-  return { onSelect, onDragEnd, onRelationDragStart }
+  return { onSelect, onDragEnd, onRelationDragStart, container: result.container }
 }
 
 describe('TaskGraphItem', () => {
@@ -160,5 +166,80 @@ describe('hybrid gradient border (T6)', () => {
         onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />,
     )
     expect((container.firstChild as Element)?.className).not.toMatch(/gradient/)
+  })
+})
+
+describe('constraint buffer styling (T7)', () => {
+  it('applies constrainedStart when startDate is set', () => {
+    const task = makeTask({ startDate: new Date(Date.now()).toISOString(), startType: 'Fixed' })
+    const { container } = renderItem(task)
+    expect((container.firstChild as Element)?.className).toMatch(/constrainedStart/)
+  })
+
+  it('applies unconstrainedStart when startDate is not set', () => {
+    const { container } = renderItem(BASE)
+    expect((container.firstChild as Element)?.className).toMatch(/unconstrainedStart/)
+  })
+
+  it('applies constrainedEnd when endDate is set', () => {
+    const { container } = renderItem(BASE) // BASE has endDate
+    expect((container.firstChild as Element)?.className).toMatch(/constrainedEnd/)
+  })
+
+  it('applies unconstrainedEnd when endDate is not set', () => {
+    const task = makeTask({ endDate: null, endType: 'None' })
+    const { container } = renderItem(task)
+    expect((container.firstChild as Element)?.className).toMatch(/unconstrainedEnd/)
+  })
+})
+
+describe('reduced display and hover-expand (T8, T10)', () => {
+  it('applies reduced class when both dates set and width < CARD_WIDTH', () => {
+    const start = new Date(Date.now()).toISOString()
+    const end   = new Date(Date.now() + 86_400_000).toISOString() // 1 day span → narrow
+    const task  = makeTask({ startDate: start, startType: 'Fixed', endDate: end })
+    const { container } = renderItem(task, undefined, CARD_WIDTH / 2)
+    expect((container.firstChild as Element)?.className).toMatch(/reduced/)
+  })
+
+  it('does not apply reduced class when width >= CARD_WIDTH', () => {
+    const start = new Date(Date.now()).toISOString()
+    const end   = new Date(Date.now() + 30 * 86_400_000).toISOString()
+    const task  = makeTask({ startDate: start, startType: 'Fixed', endDate: end })
+    const { container } = renderItem(task, undefined, CARD_WIDTH * 2)
+    expect((container.firstChild as Element)?.className).not.toMatch(/reduced/)
+  })
+
+  it('expands reduced card to standard width after 500 ms hover', async () => {
+    vi.useFakeTimers()
+    const start = new Date(Date.now()).toISOString()
+    const end   = new Date(Date.now() + 86_400_000).toISOString()
+    const task  = makeTask({ startDate: start, startType: 'Fixed', endDate: end })
+    const { container } = renderItem(task, undefined, CARD_WIDTH / 2)
+    const card = container.firstChild as HTMLElement
+
+    fireEvent.mouseEnter(card)
+    expect(card.className).not.toMatch(/expanded/)
+
+    await act(async () => { vi.advanceTimersByTime(500) })
+    expect(card.className).toMatch(/expanded/)
+
+    fireEvent.mouseLeave(card)
+    expect(card.className).not.toMatch(/expanded/)
+    vi.useRealTimers()
+  })
+
+  it('does not expand before 500 ms', async () => {
+    vi.useFakeTimers()
+    const start = new Date(Date.now()).toISOString()
+    const end   = new Date(Date.now() + 86_400_000).toISOString()
+    const task  = makeTask({ startDate: start, startType: 'Fixed', endDate: end })
+    const { container } = renderItem(task, undefined, CARD_WIDTH / 2)
+    const card = container.firstChild as HTMLElement
+
+    fireEvent.mouseEnter(card)
+    await act(async () => { vi.advanceTimersByTime(499) })
+    expect(card.className).not.toMatch(/expanded/)
+    vi.useRealTimers()
   })
 })

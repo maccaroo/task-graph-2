@@ -113,6 +113,40 @@ describe('computeAutoLayout', () => {
     const pos = positions.get('t1')!
     const expectedEndX = CANVAS_PAD_X + 30 * pixelsPerDay
     expect(pos.x).toBeCloseTo(expectedEndX - CARD_WIDTH, 0)
+    expect(pos.width).toBe(CARD_WIDTH)
+  })
+
+  it('aligns start side to start date for start-only task', () => {
+    const viewStart = new Date('2025-01-01')
+    const startDate = '2025-01-11' // 10 days after viewStart
+    const pixelsPerDay = 40
+    const tasks = [makeTask({ id: 't1', startDate, startType: 'Fixed' })]
+    const positions = computeAutoLayout(tasks, viewStart, pixelsPerDay)
+    const pos = positions.get('t1')!
+    const expectedStartX = CANVAS_PAD_X + 10 * pixelsPerDay
+    expect(pos.x).toBeCloseTo(expectedStartX, 0)
+    expect(pos.width).toBe(CARD_WIDTH)
+  })
+
+  it('spans both-constrained task from start to end date', () => {
+    const viewStart = new Date('2025-01-01')
+    const startDate = '2025-01-11' // 10 days after viewStart
+    const endDate   = '2025-02-10' // 40 days after viewStart
+    const pixelsPerDay = 40
+    const tasks = [makeTask({ id: 't1', startDate, startType: 'Fixed', endDate })]
+    const positions = computeAutoLayout(tasks, viewStart, pixelsPerDay)
+    const pos = positions.get('t1')!
+    const expectedStartX = CANVAS_PAD_X + 10 * pixelsPerDay
+    const expectedEndX   = CANVAS_PAD_X + 40 * pixelsPerDay
+    expect(pos.x).toBeCloseTo(expectedStartX, 0)
+    expect(pos.width).toBeCloseTo(expectedEndX - expectedStartX, 0)
+  })
+
+  it('uses standard width for open-ended task', () => {
+    const viewStart = new Date('2025-01-01')
+    const tasks = [makeTask({ id: 't1' })]
+    const positions = computeAutoLayout(tasks, viewStart, 40)
+    expect(positions.get('t1')!.width).toBe(CARD_WIDTH)
   })
 
   it('places overlapping tasks in separate rows', () => {

@@ -1,12 +1,5 @@
-import { createContext, useState, type ReactNode } from 'react'
-
-export interface AuthContextValue {
-  token: string | null
-  userId: string | null
-  login: (token: string, userId: string) => void
-  logout: () => void
-  isAuthenticated: boolean
-}
+import { useState, type ReactNode } from 'react'
+import { AuthContext } from './authContextDef'
 
 interface AuthState {
   token: string | null
@@ -15,8 +8,6 @@ interface AuthState {
 
 const TOKEN_KEY = 'auth_token'
 const USER_ID_KEY = 'auth_user_id'
-
-export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({

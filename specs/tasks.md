@@ -109,6 +109,10 @@
 [x] T4 - Predecessor drag widget — drag to create predecessor relationship
 [x] T5 - Successor drag widget — drag to create successor relationship
 [x] T6 - Apply hybrid gradient colour for tasks spanning multiple due-status periods
+[x] T7 - Display constrained/unconstrained sides with solid/soft buffer styling
+[x] T8 - Position task items by time constraints (start-only, end-only, both, neither)
+[x] T9 - Span both-constrained tasks from start to end date with centred content
+[x] T10 - Reduced display for narrow both-constrained tasks with hover-expand (500 ms)
 
 ## P15 - Task Detail Panel
 [ ] T1 - Build collapsible Task Detail panel (right edge of graph view)

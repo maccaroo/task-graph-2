@@ -22,6 +22,32 @@ Validation:
 - Start date: Predecessor < this task < Successor
 - Completion date: Predecessor < this task < Successor
 
+## Time Constraint Display
+
+Task items are positioned and sized based on their timing constraints.
+
+### Standard Content Width
+Task items have a standard content width, large enough to display all content elements succinctly.
+
+### Constrained/Unconstrained Sides
+Each side (start side and end side) indicates whether it is constrained:
+- **Constrained side** (has a date): displayed with a solid buffer (sharp, solid edge cap)
+- **Unconstrained side** (no date): displayed with a soft buffer (gradient fade-out edge)
+
+### Placement Rules
+**One side constrained** — card uses the standard content width:
+- Only end date set: end side of card aligns to the end date
+- Only start date set: start side of card aligns to the start date
+
+**Both sides constrained** — card spans from start date to end date:
+- If the span ≥ standard content width:
+  - Content is displayed at the standard width, centred within the span
+  - If the card is partially scrolled out of the viewport, the content remains in view
+- If the span < standard content width (reduced display):
+  - Only the task title is shown
+  - Hovering for >500 ms temporarily expands the card to standard content width
+  - The expanded card may overlap nearby cards and is rendered on top
+
 ## Due Status
 The task's due status is determined by its timing and the current time.  Tasks which sit entirely within a time period (i.e., 'Soon Due') are given that status.  Tasks which overlap more than one time period (i.e., Start in 'Present' but End in 'Due Soon') are given a hybrid status (i.e., 'Present/Soon Due').
 
