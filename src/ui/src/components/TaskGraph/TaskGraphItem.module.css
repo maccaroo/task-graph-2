@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   background: var(--color-surface-raised);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
@@ -13,7 +13,9 @@
   user-select: none;
   transition: box-shadow var(--transition-fast), transform var(--transition-fast);
   overflow: visible;
-  border: 2px solid var(--start-color, var(--color-border));
+  border: 3px solid var(--start-color, var(--color-border));
+  height: 52px;
+  box-sizing: border-box;
 }
 
 .card:hover {
@@ -36,8 +38,8 @@
 .gradient::before {
   content: '';
   position: absolute;
-  inset: -2px;
-  border-radius: calc(var(--radius-md) + 2px);
+  inset: -3px;
+  border-radius: calc(var(--radius-md) + 3px);
   background: linear-gradient(to right, var(--start-color), var(--end-color));
   z-index: -1;
   pointer-events: none;
@@ -80,81 +82,20 @@
 .meta {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
 }
 
-.statusLabel {
+.deps {
   font-size: var(--text-xs);
-  color: var(--status-color, var(--color-text-secondary));
-  font-weight: var(--font-medium);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
 }
 
 .timeLabel {
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
-}
-
-/* ── Dependency sections (T2, T3) ─────────────────── */
-
-.depSection {
-  margin-top: var(--space-1);
-}
-
-.depToggle {
-  font-size: var(--text-xs);
-  color: var(--color-text-secondary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  text-align: left;
-}
-
-.depToggle:hover {
-  color: var(--color-primary);
-}
-
-.depList {
-  list-style: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 20;
-  margin-top: var(--space-1);
-  padding: var(--space-1) var(--space-2);
-  background: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-md);
-  min-width: 160px;
-  max-width: 240px;
-  max-height: 160px;
-  overflow-y: auto;
-}
-
-.depLink {
-  font-size: var(--text-xs);
-  color: var(--color-primary);
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px 0;
-  text-align: left;
-  width: 100%;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.depLink:hover {
-  text-decoration: underline;
-}
-
-.depUnknown {
-  font-size: var(--text-xs);
-  color: var(--color-text-disabled);
-  padding: 2px 0;
 }
 
 /* ── Relation drag widgets (T4, T5) ───────────────── */

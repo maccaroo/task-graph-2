@@ -1,14 +1,11 @@
-import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRef } from 'react'
 import type { Task } from '../../services/tasks'
 import {
   computeDueStatus,
   computeDueStatusForDate,
   DUE_STATUS_COLOR_VAR,
-  DUE_STATUS_LABEL,
 } from '../../utils/taskStatus'
-import { ROUTES } from '../../routeConstants'
-import { CARD_WIDTH, CARD_HEIGHT, MS_PER_DAY } from './graphLayout'
+import { CARD_WIDTH, MS_PER_DAY } from './graphLayout'
 import styles from './TaskGraphItem.module.css'
 
 export type RelationDragType = 'predecessor' | 'successor'
@@ -57,7 +54,6 @@ function borderColors(task: Task): { startColor: string; endColor: string } {
 
 export function TaskGraphItem({
   task,
-  taskMap,
   x,
   y,
   selected,
@@ -66,14 +62,15 @@ export function TaskGraphItem({
   onDragEnd,
   onRelationDragStart,
 }: TaskGraphItemProps) {
-  const navigate = useNavigate()
   const dueStatus = computeDueStatus(task)
   const timeLabel = getTimeLabel(task)
   const { startColor, endColor } = borderColors(task)
   const isGradient = startColor !== endColor
 
-  const [expandedSection, setExpandedSection] = useState<'pred' | 'succ' | null>(null)
   const dragRef = useRef<{ startX: number; startY: number } | null>(null)
+
+  const hasPred = task.predecessorIds.length > 0
+  const hasSucc = task.successorIds.length > 0
 
   // ── Card drag (reposition) ─────────────────────────────────────────────
 
@@ -111,23 +108,12 @@ export function TaskGraphItem({
     onRelationDragStart(task.id, type, e.clientX, e.clientY)
   }
 
-  // ── Dep list toggle ─────────────────────────────────────────────────────
-
-  function toggleSection(section: 'pred' | 'succ', e: React.MouseEvent) {
-    e.stopPropagation()
-    setExpandedSection(prev => (prev === section ? null : section))
-  }
-
-  const predTasks = task.predecessorIds.map(id => taskMap.get(id)).filter(Boolean) as Task[]
-  const succTasks = task.successorIds.map(id => taskMap.get(id)).filter(Boolean) as Task[]
-
   // ── Style ─────────────────────────────────────────────────────────────
 
   const cardStyle = {
     left: x,
     top: y,
     width: CARD_WIDTH,
-    minHeight: CARD_HEIGHT,
     '--start-color': startColor,
     '--end-color': endColor,
     '--status-color': DUE_STATUS_COLOR_VAR[dueStatus],
@@ -179,73 +165,15 @@ export function TaskGraphItem({
       <div className={styles.title} title={task.title}>{task.title}</div>
 
       <div className={styles.meta}>
-        <span className={styles.statusLabel}>{DUE_STATUS_LABEL[dueStatus]}</span>
+        {(hasPred || hasSucc) && (
+          <span className={styles.deps}>
+            {hasPred && `← ${task.predecessorIds.length}`}
+            {hasPred && hasSucc && '  '}
+            {hasSucc && `${task.successorIds.length} →`}
+          </span>
+        )}
         {timeLabel && <span className={styles.timeLabel}>{timeLabel}</span>}
       </div>
-
-      {/* ── Upstream predecessors (T2) ── */}
-      {task.predecessorIds.length > 0 && (
-        <div className={styles.depSection}>
-          <button
-            className={styles.depToggle}
-            onClick={e => toggleSection('pred', e)}
-            aria-expanded={expandedSection === 'pred'}
-          >
-            ← {task.predecessorIds.length} predecessor{task.predecessorIds.length !== 1 ? 's' : ''}
-          </button>
-          {expandedSection === 'pred' && (
-            <ul className={styles.depList}>
-              {predTasks.map(t => (
-                <li key={t.id}>
-                  <button
-                    className={styles.depLink}
-                    onClick={e => { e.stopPropagation(); navigate(ROUTES.TASK(t.id)) }}
-                  >
-                    {t.title}
-                  </button>
-                </li>
-              ))}
-              {predTasks.length < task.predecessorIds.length && (
-                <li className={styles.depUnknown}>
-                  +{task.predecessorIds.length - predTasks.length} (not in view)
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
-      )}
-
-      {/* ── Downstream successors (T3) ── */}
-      {task.successorIds.length > 0 && (
-        <div className={styles.depSection}>
-          <button
-            className={styles.depToggle}
-            onClick={e => toggleSection('succ', e)}
-            aria-expanded={expandedSection === 'succ'}
-          >
-            → {task.successorIds.length} successor{task.successorIds.length !== 1 ? 's' : ''}
-          </button>
-          {expandedSection === 'succ' && (
-            <ul className={styles.depList}>
-              {succTasks.map(t => (
-                <li key={t.id}>
-                  <button
-                    className={styles.depLink}
-                    onClick={e => { e.stopPropagation(); navigate(ROUTES.TASK(t.id)) }}
-                  >
-                    {t.title}
-                  </button>
-                </li>
-              ))}
-              {succTasks.length < task.successorIds.length && (
-                <li className={styles.depUnknown}>
-                  +{task.successorIds.length - succTasks.length} (not in view)
-                </li>
-              )}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   )
 }

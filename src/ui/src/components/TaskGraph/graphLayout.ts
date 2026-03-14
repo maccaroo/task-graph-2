@@ -1,10 +1,10 @@
 import type { Task } from '../../services/tasks'
 
 export const CARD_WIDTH = 180
-export const CARD_HEIGHT = 80
-export const ROW_HEIGHT = 120
+export const CARD_HEIGHT = 52
+export const ROW_HEIGHT = 64
 export const CANVAS_PAD_X = 280
-export const CANVAS_PAD_Y = 56   // space for floating time axis
+export const CANVAS_PAD_Y = 72   // time axis height (56px) + 16px gap
 export const MS_PER_DAY = 86_400_000
 const DATE_PAD_DAYS = 14
 

@@ -8,6 +8,7 @@ import {
   CANVAS_PAD_X,
   CANVAS_PAD_Y,
   CARD_WIDTH,
+  CARD_HEIGHT,
   ROW_HEIGHT,
   MS_PER_DAY,
 } from './graphLayout'
@@ -157,7 +158,7 @@ describe('constants', () => {
     expect(CANVAS_PAD_X).toBeGreaterThan(0)
     expect(CANVAS_PAD_Y).toBeGreaterThan(0)
     expect(CARD_WIDTH).toBeGreaterThan(0)
-    expect(ROW_HEIGHT).toBeGreaterThan(CARD_WIDTH / 2) // rows taller than card
+    expect(ROW_HEIGHT).toBeGreaterThan(CARD_HEIGHT) // rows taller than card height
     expect(MS_PER_DAY).toBe(86_400_000)
   })
 })

@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
 import { TaskGraphItem } from './TaskGraphItem'
 import type { Task } from '../../services/tasks'
 
@@ -33,19 +32,17 @@ function renderItem(task: Task, taskMap = new Map<string, Task>([[task.id, task]
   const onRelationDragStart = vi.fn()
 
   render(
-    <MemoryRouter>
-      <TaskGraphItem
-        task={task}
-        taskMap={taskMap}
-        x={100}
-        y={100}
-        selected={false}
-        isDragTarget={false}
-        onSelect={onSelect}
-        onDragEnd={onDragEnd}
-        onRelationDragStart={onRelationDragStart}
-      />
-    </MemoryRouter>,
+    <TaskGraphItem
+      task={task}
+      taskMap={taskMap}
+      x={100}
+      y={100}
+      selected={false}
+      isDragTarget={false}
+      onSelect={onSelect}
+      onDragEnd={onDragEnd}
+      onRelationDragStart={onRelationDragStart}
+    />,
   )
 
   return { onSelect, onDragEnd, onRelationDragStart }
@@ -70,8 +67,7 @@ describe('TaskGraphItem', () => {
 
   it('shows overdue label for past task', () => {
     renderItem(makeTask({ endDate: new Date(Date.now() - 3 * 86_400_000).toISOString() }))
-    // Both statusLabel ("Overdue") and timeLabel ("3d overdue") match — check at least one exists
-    expect(screen.getAllByText(/overdue/i).length).toBeGreaterThan(0)
+    expect(screen.getByText(/overdue/i)).toBeInTheDocument()
   })
 
   it('does not show time label for completed task', () => {
@@ -79,47 +75,24 @@ describe('TaskGraphItem', () => {
     expect(screen.queryByText(/left|overdue|due today/)).toBeNull()
   })
 
-  it('shows predecessor count button when predecessors exist', () => {
+  it('shows predecessor count when predecessors exist', () => {
     renderItem(makeTask({ predecessorIds: ['p1', 'p2'] }))
-    expect(screen.getByText(/2 predecessor/)).toBeInTheDocument()
+    expect(screen.getByText(/← 2/)).toBeInTheDocument()
   })
 
-  it('shows successor count button when successors exist', () => {
+  it('shows successor count when successors exist', () => {
     renderItem(makeTask({ successorIds: ['s1'] }))
-    expect(screen.getByText(/1 successor/)).toBeInTheDocument()
+    expect(screen.getByText(/1 →/)).toBeInTheDocument()
   })
 
-  it('expands predecessor list on click showing linked task titles', () => {
-    const pred = makeTask({ id: 'p1', title: 'Pred Task', predecessorIds: [], successorIds: ['task-1'] })
-    const main = makeTask({ predecessorIds: ['p1'] })
-    const taskMap = new Map([['task-1', main], ['p1', pred]])
-    renderItem(main, taskMap)
-
-    fireEvent.click(screen.getByText(/1 predecessor/))
-    expect(screen.getByText('Pred Task')).toBeInTheDocument()
+  it('shows both predecessor and successor counts on one line', () => {
+    renderItem(makeTask({ predecessorIds: ['p1'], successorIds: ['s1'] }))
+    expect(screen.getByText(/← 1.*1 →/)).toBeInTheDocument()
   })
 
-  it('expands successor list on click', () => {
-    const succ = makeTask({ id: 's1', title: 'Succ Task', predecessorIds: ['task-1'], successorIds: [] })
-    const main = makeTask({ successorIds: ['s1'] })
-    const taskMap = new Map([['task-1', main], ['s1', succ]])
-    renderItem(main, taskMap)
-
-    fireEvent.click(screen.getByText(/1 successor/))
-    expect(screen.getByText('Succ Task')).toBeInTheDocument()
-  })
-
-  it('collapses expanded list on second click', () => {
-    const pred = makeTask({ id: 'p1', title: 'Pred Task', predecessorIds: [], successorIds: ['task-1'] })
-    const main = makeTask({ predecessorIds: ['p1'] })
-    const taskMap = new Map([['task-1', main], ['p1', pred]])
-    renderItem(main, taskMap)
-
-    const toggle = screen.getByText(/1 predecessor/)
-    fireEvent.click(toggle)
-    expect(screen.getByText('Pred Task')).toBeInTheDocument()
-    fireEvent.click(toggle)
-    expect(screen.queryByText('Pred Task')).toBeNull()
+  it('shows no deps line when task has no predecessors or successors', () => {
+    renderItem(BASE)
+    expect(screen.queryByText(/←|→/)).toBeNull()
   })
 
   it('renders predecessor widget button', () => {
@@ -146,18 +119,16 @@ describe('TaskGraphItem', () => {
 
   it('applies dragTarget class when isDragTarget is true', () => {
     const { container } = render(
-      <MemoryRouter>
-        <TaskGraphItem
-          task={BASE}
-          taskMap={new Map([[BASE.id, BASE]])}
-          x={0} y={0}
-          selected={false}
-          isDragTarget={true}
-          onSelect={vi.fn()}
-          onDragEnd={vi.fn()}
-          onRelationDragStart={vi.fn()}
-        />
-      </MemoryRouter>,
+      <TaskGraphItem
+        task={BASE}
+        taskMap={new Map([[BASE.id, BASE]])}
+        x={0} y={0}
+        selected={false}
+        isDragTarget={true}
+        onSelect={vi.fn()}
+        onDragEnd={vi.fn()}
+        onRelationDragStart={vi.fn()}
+      />,
     )
     // CSS modules hash class names — check that the className contains "dragTarget"
     expect((container.firstChild as Element)?.className).toMatch(/dragTarget/)
@@ -171,11 +142,9 @@ describe('hybrid gradient border (T6)', () => {
     const futureEnd   = new Date(Date.now() + 30 * 86_400_000).toISOString()
     const task = makeTask({ startDate: soonStart, endDate: futureEnd, startType: 'Fixed', endType: 'Fixed' })
     const { container } = render(
-      <MemoryRouter>
-        <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
-          x={0} y={0} selected={false} isDragTarget={false}
-          onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />
-      </MemoryRouter>,
+      <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
+        x={0} y={0} selected={false} isDragTarget={false}
+        onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />,
     )
     // CSS modules hash class names — check className contains "gradient"
     expect((container.firstChild as Element)?.className).toMatch(/gradient/)
@@ -186,11 +155,9 @@ describe('hybrid gradient border (T6)', () => {
     const end   = new Date(Date.now() + 6 * 86_400_000).toISOString()
     const task  = makeTask({ startDate: start, endDate: end, startType: 'Fixed', endType: 'Fixed' })
     const { container } = render(
-      <MemoryRouter>
-        <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
-          x={0} y={0} selected={false} isDragTarget={false}
-          onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />
-      </MemoryRouter>,
+      <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
+        x={0} y={0} selected={false} isDragTarget={false}
+        onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />,
     )
     expect((container.firstChild as Element)?.className).not.toMatch(/gradient/)
   })
