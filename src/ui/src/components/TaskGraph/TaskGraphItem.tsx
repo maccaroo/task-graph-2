@@ -8,7 +8,7 @@ import {
 import { CARD_WIDTH, MS_PER_DAY } from './graphLayout'
 import styles from './TaskGraphItem.module.css'
 
-export type RelationDragType = 'predecessor' | 'successor'
+export type AnchorType = 'start' | 'end'
 
 interface TaskGraphItemProps {
   task: Task
@@ -21,7 +21,7 @@ interface TaskGraphItemProps {
   isDragTarget: boolean
   onSelect: (id: string) => void
   onDragEnd: (id: string, deltaX: number, deltaY: number) => void
-  onRelationDragStart: (sourceId: string, type: RelationDragType, clientX: number, clientY: number) => void
+  onRelationDragStart: (sourceId: string, anchor: AnchorType, clientX: number, clientY: number) => void
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -131,10 +131,10 @@ export function TaskGraphItem({
 
   // ── Relation widget drag (create predecessor/successor) ──────────────────
 
-  function handleWidgetMouseDown(e: React.MouseEvent, type: RelationDragType) {
+  function handleWidgetMouseDown(e: React.MouseEvent, anchor: AnchorType) {
     e.stopPropagation()
     e.preventDefault()
-    onRelationDragStart(task.id, type, e.clientX, e.clientY)
+    onRelationDragStart(task.id, anchor, e.clientX, e.clientY)
   }
 
   // ── Style ────────────────────────────────────────────────────────────────
@@ -178,24 +178,24 @@ export function TaskGraphItem({
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(task.id) }
       }}
     >
-      {/* ── Predecessor widget (start side) T4 ── */}
+      {/* ── Start anchor widget T11 ── */}
       <div
         className={styles.widgetStart}
-        title="Drag to set a predecessor"
-        onMouseDown={e => handleWidgetMouseDown(e, 'predecessor')}
-        aria-label="Add predecessor"
+        title="Drag to create a relationship"
+        onMouseDown={e => handleWidgetMouseDown(e, 'start')}
+        aria-label="Start anchor"
         role="button"
         tabIndex={-1}
       >
         ◀
       </div>
 
-      {/* ── Successor widget (end side) T5 ── */}
+      {/* ── End anchor widget T11 ── */}
       <div
         className={styles.widgetEnd}
-        title="Drag to set a successor"
-        onMouseDown={e => handleWidgetMouseDown(e, 'successor')}
-        aria-label="Add successor"
+        title="Drag to create a relationship"
+        onMouseDown={e => handleWidgetMouseDown(e, 'end')}
+        aria-label="End anchor"
         role="button"
         tabIndex={-1}
       >

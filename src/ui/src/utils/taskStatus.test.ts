@@ -11,6 +11,7 @@ function task(overrides: Partial<Task> = {}): Task {
     endType: 'None', endDate: null,
     duration: null, pinnedPosition: null,
     predecessorIds: [], successorIds: [],
+    predecessors: [], successors: [],
     ...overrides,
   }
 }

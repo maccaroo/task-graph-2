@@ -15,12 +15,19 @@ Contains the following:
         - Count
         - List of titles (with hyperlinks)
 
-## Predecessor/successor widgets
-The task item is rendered with predecessor/successor widgets at the front and back.  These can be used create a relationship between one task and another by dragging a predecessor/successor widget from one task to another.  The widgets are only active if the relationship is valid (i.e., the predecessor/successor task is not already a predecessor/successor of the other task, and the relationship does not create a cycle in the graph).
+## Anchor widgets
+The task item is rendered with anchor widgets at the front and back.  These can be used create a relationship between one task and another by dragging an anchor widget from one task to the anchor widget of another.  Once a widget starts being dragged, only target widgets for valid relationships are visible.
+
+When dragging an anchor widget to form a relationship, the earlier widget is always the predecessor, and the later widget is always the successor.  If the anchor widgets have the same date, then only an end to start relationship is valid, and the predecessor is always the end anchor's task, and the successor is always the start anchor's task. 
+
+For example, dragging the end anchor of Task A to the start anchor of Task B creates a the following relationship:
+- If end(A) < start(B), then predecessor=Task A, successor=Task B
+- If start(B) < end(A), then predecessor=Task B, successor=Task A
+- If end(A) = start(B), then predecessor=Task A, successor=Task B (only end to start relationship is valid)
 
 Validation:
-- Start date: Predecessor < this task < Successor
-- Completion date: Predecessor < this task < Successor
+- Relationship anchor sequence: The predecessor anchor date cannot be after the successor anchor date.
+- No cycles: A task cannot be an predecessor or successor of itself
 
 ## Time Constraint Display
 

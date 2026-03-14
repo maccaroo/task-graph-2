@@ -26,6 +26,8 @@ const mockTasks: tasksSvc.Task[] = [
     pinnedPosition: null,
     predecessorIds: [],
     successorIds: ['task-2'],
+    predecessors: [],
+    successors: [{ relatedTaskId: 'task-2', type: 'Exclusive' }],
   },
   {
     id: 'task-2',
@@ -44,6 +46,8 @@ const mockTasks: tasksSvc.Task[] = [
     pinnedPosition: null,
     predecessorIds: ['task-1'],
     successorIds: [],
+    predecessors: [{ relatedTaskId: 'task-1', type: 'Exclusive' }],
+    successors: [],
   },
   {
     id: 'task-open',
@@ -62,6 +66,8 @@ const mockTasks: tasksSvc.Task[] = [
     pinnedPosition: null,
     predecessorIds: [],
     successorIds: [],
+    predecessors: [],
+    successors: [],
   },
 ]
 

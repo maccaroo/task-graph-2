@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using TaskGraph.Api.DTOs.Tasks;
 using TaskGraph.Api.Exceptions;
+using TaskGraph.Api.Models;
 using TaskGraph.Api.Services;
 
 namespace TaskGraph.Api.Controllers;
@@ -74,11 +75,11 @@ public class TasksController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/predecessors/{predecessorId:guid}")]
-    public async Task<IActionResult> AddPredecessor(Guid id, Guid predecessorId)
+    public async Task<IActionResult> AddPredecessor(Guid id, Guid predecessorId, [FromBody] AddPredecessorRequest? request)
     {
         try
         {
-            var task = await taskService.AddPredecessorAsync(id, predecessorId);
+            var task = await taskService.AddPredecessorAsync(id, predecessorId, request?.RelationshipType ?? RelationshipType.Exclusive);
             return Ok(task);
         }
         catch (ValidationException ex) { return BadRequest(new { error = ex.Message }); }

@@ -7,4 +7,6 @@ public class TaskRelationship
 
     public Guid PredecessorId { get; set; }
     public TaskItem Predecessor { get; set; } = null!;
+
+    public RelationshipType RelationshipType { get; set; } = RelationshipType.Exclusive;
 }

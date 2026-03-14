@@ -142,7 +142,7 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         return ToResponse(await LoadTaskAsync(id));
     }
 
-    public async Task<TaskResponse> AddPredecessorAsync(Guid taskId, Guid predecessorId)
+    public async Task<TaskResponse> AddPredecessorAsync(Guid taskId, Guid predecessorId, RelationshipType relationshipType)
     {
         if (taskId == predecessorId)
             throw new ValidationException("A task cannot be its own predecessor.");
@@ -159,15 +159,48 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         if (task.Predecessors.Any(p => p.PredecessorId == predecessorId))
             throw new ConflictException("Predecessor relationship already exists.");
 
-        if (predecessor.EndDate.HasValue && task.StartDate.HasValue
-            && predecessor.EndDate > task.StartDate)
-        {
-            throw new ValidationException("Predecessor must end before or when the task starts.");
-        }
+        ValidateRelationshipConstraint(predecessor, task, relationshipType);
 
-        db.TaskRelationships.Add(new TaskRelationship { TaskId = taskId, PredecessorId = predecessorId });
+        db.TaskRelationships.Add(new TaskRelationship
+        {
+            TaskId = taskId,
+            PredecessorId = predecessorId,
+            RelationshipType = relationshipType
+        });
         await db.SaveChangesAsync();
         return ToResponse(await LoadTaskAsync(taskId));
+    }
+
+    private static void ValidateRelationshipConstraint(TaskItem predecessor, TaskItem task, RelationshipType type)
+    {
+        // Validate per-type anchor ordering when both dates are present
+        var violation = type switch
+        {
+            // predecessor.End ≤ task.Start
+            RelationshipType.Exclusive =>
+                predecessor.EndDate.HasValue && task.StartDate.HasValue && predecessor.EndDate > task.StartDate
+                    ? "Predecessor must end before or when the task starts (Exclusive)."
+                    : null,
+            // predecessor.Start ≤ task.Start
+            RelationshipType.HaveStarted =>
+                predecessor.StartDate.HasValue && task.StartDate.HasValue && predecessor.StartDate > task.StartDate
+                    ? "Predecessor must start before or when the task starts (HaveStarted)."
+                    : null,
+            // predecessor.End ≤ task.End
+            RelationshipType.HaveCompleted =>
+                predecessor.EndDate.HasValue && task.EndDate.HasValue && predecessor.EndDate > task.EndDate
+                    ? "Predecessor must end before or when the task ends (HaveCompleted)."
+                    : null,
+            // predecessor.Start ≤ task.End
+            RelationshipType.HandOff =>
+                predecessor.StartDate.HasValue && task.EndDate.HasValue && predecessor.StartDate > task.EndDate
+                    ? "Predecessor must start before or when the task ends (HandOff)."
+                    : null,
+            _ => null
+        };
+
+        if (violation is not null)
+            throw new ValidationException(violation);
     }
 
     public async Task DeletePredecessorAsync(Guid taskId, Guid predecessorId)
@@ -208,6 +241,8 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         t.Duration,
         t.PinnedPosition is { } p ? new PinnedPositionDto(p.X, p.Y) : null,
         t.Predecessors.Select(r => r.PredecessorId).ToList(),
-        t.Successors.Select(r => r.TaskId).ToList()
+        t.Successors.Select(r => r.TaskId).ToList(),
+        t.Predecessors.Select(r => new TaskRelationshipInfo(r.PredecessorId, r.RelationshipType)).ToList(),
+        t.Successors.Select(r => new TaskRelationshipInfo(r.TaskId, r.RelationshipType)).ToList()
     );
 }

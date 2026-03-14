@@ -12,7 +12,7 @@ import { computeDueStatus, DUE_STATUS_LABEL, type DueStatusKey } from '../../uti
 import { Button } from '../ui'
 import { AddTaskModal } from '../TaskList/AddTaskModal'
 import { TimeAxis } from './TimeAxis'
-import { TaskGraphItem, type RelationDragType } from './TaskGraphItem'
+import { TaskGraphItem, type AnchorType } from './TaskGraphItem'
 import {
   CANVAS_PAD_Y,
   CARD_HEIGHT,
@@ -25,6 +25,7 @@ import {
   xToDate,
   type TaskPosition,
 } from './graphLayout'
+import { resolveRelationship } from './TaskGraph.utils'
 import styles from './TaskGraph.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -51,9 +52,10 @@ const DEFAULT_ZOOM = 40
 
 interface RelationDrag {
   sourceId: string
-  type: RelationDragType
+  sourceAnchor: AnchorType
   cursorX: number
   cursorY: number
+  targetAnchor: AnchorType | null
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -218,13 +220,25 @@ export function TaskGraph() {
     for (const task of filtered) {
       const toPos = positions.get(task.id)
       if (!toPos) continue
-      for (const predId of task.predecessorIds) {
-        const fromPos = positions.get(predId)
+      for (const rel of task.predecessors) {
+        const fromPos = positions.get(rel.relatedTaskId)
         if (!fromPos) continue
-        const x1 = fromPos.x + fromPos.width, y1 = fromPos.y + CARD_HEIGHT / 2
-        const x2 = toPos.x,                   y2 = toPos.y   + CARD_HEIGHT / 2
-        const cx = (x1 + x2) / 2
-        result.push({ id: `${predId}->${task.id}`, fromId: predId, toId: task.id, d: `M ${x1} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${x2} ${y2}`, dashed: !filteredIds.has(predId) })
+        // Predecessor anchor: end for Exclusive/HaveCompleted, start for HaveStarted/HandOff
+        const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
+          ? fromPos.x + fromPos.width : fromPos.x
+        // Successor anchor: start for Exclusive/HaveStarted, end for HaveCompleted/HandOff
+        const toX = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
+          ? toPos.x : toPos.x + toPos.width
+        const y1 = fromPos.y + CARD_HEIGHT / 2
+        const y2 = toPos.y   + CARD_HEIGHT / 2
+        const cx = (fromX + toX) / 2
+        result.push({
+          id: `${rel.relatedTaskId}->${task.id}`,
+          fromId: rel.relatedTaskId,
+          toId: task.id,
+          d: `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${toX} ${y2}`,
+          dashed: !filteredIds.has(rel.relatedTaskId),
+        })
       }
     }
     return result
@@ -234,8 +248,8 @@ export function TaskGraph() {
     if (!relationDrag) return null
     const src = positionsRef.current.get(relationDrag.sourceId)
     if (!src) return null
-    const isSucc = relationDrag.type === 'successor'
-    return { x1: isSucc ? src.x + src.width : src.x, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
+    const x1 = relationDrag.sourceAnchor === 'end' ? src.x + src.width : src.x
+    return { x1, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
   }, [relationDrag])
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
@@ -303,7 +317,9 @@ export function TaskGraph() {
 
   // ── Relation drag (wire tasks together) ───────────────────────────────────
 
-  function handleRelationDragStart(sourceId: string, type: RelationDragType, clientX: number, clientY: number) {
+  const dragTargetAnchorRef = useRef<AnchorType | null>(null)
+
+  function handleRelationDragStart(sourceId: string, sourceAnchor: AnchorType, clientX: number, clientY: number) {
     const container = containerRef.current
     if (!container) return
     const rect = container.getBoundingClientRect()
@@ -312,26 +328,34 @@ export function TaskGraph() {
       y: cy - rect.top  + container.scrollTop,
     })
     const start = coords(clientX, clientY)
-    setRelationDrag({ sourceId, type, cursorX: start.x, cursorY: start.y })
+    setRelationDrag({ sourceId, sourceAnchor, cursorX: start.x, cursorY: start.y, targetAnchor: null })
 
     function onMove(me: MouseEvent) {
       const { x, y } = coords(me.clientX, me.clientY)
-      setRelationDrag(prev => prev ? { ...prev, cursorX: x, cursorY: y } : null)
       let target: string | null = null
+      let tAnchor: AnchorType | null = null
       for (const [id, pos] of positionsRef.current) {
         if (id === sourceId) continue
-        if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + CARD_HEIGHT) { target = id; break }
+        if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + CARD_HEIGHT) {
+          target = id
+          tAnchor = x < pos.x + pos.width / 2 ? 'start' : 'end'
+          break
+        }
       }
       dragTargetRef.current = target
+      dragTargetAnchorRef.current = tAnchor
       setDragTargetId(target)
+      setRelationDrag(prev => prev ? { ...prev, cursorX: x, cursorY: y, targetAnchor: tAnchor } : null)
     }
 
     async function onUp() {
       const targetId = dragTargetRef.current
-      if (targetId) await handleRelationDrop(sourceId, type, targetId)
+      const targetAnchor = dragTargetAnchorRef.current
+      if (targetId && targetAnchor) await handleRelationDrop(sourceId, sourceAnchor, targetId, targetAnchor)
       setRelationDrag(null)
       setDragTargetId(null)
       dragTargetRef.current = null
+      dragTargetAnchorRef.current = null
       window.removeEventListener('mousemove', onMove)
       window.removeEventListener('mouseup', onUp)
     }
@@ -340,20 +364,24 @@ export function TaskGraph() {
     window.addEventListener('mouseup', onUp)
   }
 
-  async function handleRelationDrop(sourceId: string, type: RelationDragType, targetId: string) {
-    const src = tasksRef.current.find(t => t.id === sourceId)
-    const tgt = tasksRef.current.find(t => t.id === targetId)
-    if (!src || !tgt || sourceId === targetId) return
+  async function handleRelationDrop(sourceId: string, sourceAnchor: AnchorType, targetId: string, targetAnchor: AnchorType) {
+    if (sourceId === targetId) return
+    const srcPos = positionsRef.current.get(sourceId)
+    const tgtPos = positionsRef.current.get(targetId)
+    if (!srcPos || !tgtPos) return
+
+    const srcAnchorX = sourceAnchor === 'start' ? srcPos.x : srcPos.x + srcPos.width
+    const tgtAnchorX = targetAnchor === 'start' ? tgtPos.x : tgtPos.x + tgtPos.width
+
+    const resolved = resolveRelationship(sourceId, sourceAnchor, srcAnchorX, targetId, targetAnchor, tgtAnchorX)
+    if (!resolved) return
+    const { predecessorId, taskId, relType } = resolved
+
+    const taskObj = tasksRef.current.find(t => t.id === taskId)
+    if (taskObj?.predecessorIds.includes(predecessorId)) return
     const localMap = new Map(tasksRef.current.map(t => [t.id, t]))
-    if (type === 'predecessor') {
-      if (src.predecessorIds.includes(targetId)) return
-      if (wouldCreateCycle(localMap, targetId, sourceId)) return
-      try { await addPredecessor(sourceId, targetId); await load() } catch { /* ignore */ }
-    } else {
-      if (tgt.predecessorIds.includes(sourceId)) return
-      if (wouldCreateCycle(localMap, sourceId, targetId)) return
-      try { await addPredecessor(targetId, sourceId); await load() } catch { /* ignore */ }
-    }
+    if (wouldCreateCycle(localMap, predecessorId, taskId)) return
+    try { await addPredecessor(taskId, predecessorId, relType); await load() } catch { /* ignore */ }
   }
 
   // ── Scroll to today ───────────────────────────────────────────────────────

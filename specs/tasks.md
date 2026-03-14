@@ -38,6 +38,7 @@
 [x] T7 - Implement POST /tasks/{id}/predecessors/{predecessorId} (add dependency)
 [x] T8 - Implement DELETE /tasks/{id}/predecessors/{predecessorId} (remove dependency)
 [x] T9 - Add dependency constraint validation (predecessor end < task start)
+[x] T10 - Add RelationshipType to dependency model (Exclusive, HaveStarted, HaveCompleted, HandOff) with per-type validation
 
 ## P6 - Notifications API & WebSockets
 [x] T1 - Implement GET /notifications (list notifications for current user)
@@ -113,6 +114,9 @@
 [x] T8 - Position task items by time constraints (start-only, end-only, both, neither)
 [x] T9 - Span both-constrained tasks from start to end date with centred content
 [x] T10 - Reduced display for narrow both-constrained tasks with hover-expand (500 ms)
+[x] T11 - Replace predecessor/successor widgets with start/end anchor widgets (both draggable)
+[x] T12 - Infer relationship type and predecessor/successor from dragged anchor pair and dates
+[x] T13 - Update arrow rendering to connect correct anchors per relationship type
 
 ## P15 - Task Detail Panel
 [ ] T1 - Build collapsible Task Detail panel (right edge of graph view)

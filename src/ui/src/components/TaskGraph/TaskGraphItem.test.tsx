@@ -21,6 +21,8 @@ const BASE: Task = {
   pinnedPosition: null,
   predecessorIds: [],
   successorIds: [],
+  predecessors: [],
+  successors: [],
 }
 
 function makeTask(overrides: Partial<Task>): Task {
@@ -101,26 +103,26 @@ describe('TaskGraphItem', () => {
     expect(screen.queryByText(/←|→/)).toBeNull()
   })
 
-  it('renders predecessor widget button', () => {
+  it('renders start anchor widget button', () => {
     renderItem(BASE)
-    expect(screen.getByTitle('Drag to set a predecessor')).toBeInTheDocument()
+    expect(screen.getByLabelText('Start anchor')).toBeInTheDocument()
   })
 
-  it('renders successor widget button', () => {
+  it('renders end anchor widget button', () => {
     renderItem(BASE)
-    expect(screen.getByTitle('Drag to set a successor')).toBeInTheDocument()
+    expect(screen.getByLabelText('End anchor')).toBeInTheDocument()
   })
 
-  it('calls onRelationDragStart with predecessor type on left widget mousedown', () => {
+  it('calls onRelationDragStart with start anchor on start widget mousedown', () => {
     const { onRelationDragStart } = renderItem(BASE)
-    fireEvent.mouseDown(screen.getByTitle('Drag to set a predecessor'), { button: 0, clientX: 50, clientY: 50 })
-    expect(onRelationDragStart).toHaveBeenCalledWith('task-1', 'predecessor', 50, 50)
+    fireEvent.mouseDown(screen.getByLabelText('Start anchor'), { button: 0, clientX: 50, clientY: 50 })
+    expect(onRelationDragStart).toHaveBeenCalledWith('task-1', 'start', 50, 50)
   })
 
-  it('calls onRelationDragStart with successor type on right widget mousedown', () => {
+  it('calls onRelationDragStart with end anchor on end widget mousedown', () => {
     const { onRelationDragStart } = renderItem(BASE)
-    fireEvent.mouseDown(screen.getByTitle('Drag to set a successor'), { button: 0, clientX: 250, clientY: 50 })
-    expect(onRelationDragStart).toHaveBeenCalledWith('task-1', 'successor', 250, 50)
+    fireEvent.mouseDown(screen.getByLabelText('End anchor'), { button: 0, clientX: 250, clientY: 50 })
+    expect(onRelationDragStart).toHaveBeenCalledWith('task-1', 'end', 250, 50)
   })
 
   it('applies dragTarget class when isDragTarget is true', () => {

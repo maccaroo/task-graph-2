@@ -30,6 +30,8 @@ const BASE_TASK: Task = {
   pinnedPosition: null,
   predecessorIds: [],
   successorIds: [],
+  predecessors: [],
+  successors: [],
 }
 
 function makeTask(overrides: Partial<Task>): Task {

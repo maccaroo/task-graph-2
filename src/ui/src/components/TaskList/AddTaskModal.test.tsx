@@ -36,6 +36,8 @@ beforeEach(() => {
     pinnedPosition: null,
     predecessorIds: [],
     successorIds: [],
+    predecessors: [],
+    successors: [],
   })
 })
 

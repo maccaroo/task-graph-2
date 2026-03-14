@@ -404,9 +404,10 @@ public class TaskServiceTests
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
 
-        var result = await service.AddPredecessorAsync(task.Id, predecessor.Id);
+        var result = await service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive);
 
         Assert.Contains(predecessor.Id, result.PredecessorIds);
+        Assert.Contains(result.Predecessors, p => p.RelatedTaskId == predecessor.Id && p.Type == RelationshipType.Exclusive);
     }
 
     [Fact]
@@ -416,7 +417,7 @@ public class TaskServiceTests
         var task = await SeedTask(db);
 
         await Assert.ThrowsAsync<ValidationException>(() =>
-            service.AddPredecessorAsync(task.Id, task.Id));
+            service.AddPredecessorAsync(task.Id, task.Id, RelationshipType.Exclusive));
     }
 
     [Fact]
@@ -426,10 +427,10 @@ public class TaskServiceTests
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
 
-        await service.AddPredecessorAsync(task.Id, predecessor.Id);
+        await service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive);
 
         await Assert.ThrowsAsync<ConflictException>(() =>
-            service.AddPredecessorAsync(task.Id, predecessor.Id));
+            service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive));
     }
 
     [Fact]
@@ -439,7 +440,7 @@ public class TaskServiceTests
         var predecessor = await SeedTask(db, "Predecessor");
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            service.AddPredecessorAsync(Guid.NewGuid(), predecessor.Id));
+            service.AddPredecessorAsync(Guid.NewGuid(), predecessor.Id, RelationshipType.Exclusive));
     }
 
     [Fact]
@@ -449,11 +450,11 @@ public class TaskServiceTests
         var task = await SeedTask(db, "Task");
 
         await Assert.ThrowsAsync<NotFoundException>(() =>
-            service.AddPredecessorAsync(task.Id, Guid.NewGuid()));
+            service.AddPredecessorAsync(task.Id, Guid.NewGuid(), RelationshipType.Exclusive));
     }
 
     [Fact]
-    public async Task AddPredecessor_PredecessorEndsAfterTaskStarts_ThrowsValidation()
+    public async Task AddPredecessor_Exclusive_PredecessorEndsAfterTaskStarts_ThrowsValidation()
     {
         var (service, db, _) = CreateService();
         var now = DateTime.UtcNow;
@@ -463,7 +464,61 @@ public class TaskServiceTests
             endType: TimingType.Fixed, endDate: now.AddDays(3));
 
         await Assert.ThrowsAsync<ValidationException>(() =>
-            service.AddPredecessorAsync(task.Id, predecessor.Id));
+            service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive));
+    }
+
+    [Fact]
+    public async Task AddPredecessor_HaveStarted_PredecessorStartsAfterTaskStarts_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var task = await SeedTask(db, "Task",
+            startType: TimingType.Fixed, startDate: now.AddDays(1));
+        var predecessor = await SeedTask(db, "Predecessor",
+            startType: TimingType.Fixed, startDate: now.AddDays(3));
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HaveStarted));
+    }
+
+    [Fact]
+    public async Task AddPredecessor_HaveCompleted_PredecessorEndsAfterTaskEnds_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var task = await SeedTask(db, "Task",
+            endType: TimingType.Fixed, endDate: now.AddDays(2));
+        var predecessor = await SeedTask(db, "Predecessor",
+            endType: TimingType.Fixed, endDate: now.AddDays(4));
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HaveCompleted));
+    }
+
+    [Fact]
+    public async Task AddPredecessor_HandOff_PredecessorStartsAfterTaskEnds_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var task = await SeedTask(db, "Task",
+            endType: TimingType.Fixed, endDate: now.AddDays(2));
+        var predecessor = await SeedTask(db, "Predecessor",
+            startType: TimingType.Fixed, startDate: now.AddDays(4));
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HandOff));
+    }
+
+    [Fact]
+    public async Task AddPredecessor_RelationshipTypeStoredCorrectly()
+    {
+        var (service, db, _) = CreateService();
+        var task = await SeedTask(db, "Task");
+        var predecessor = await SeedTask(db, "Predecessor");
+
+        var result = await service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HaveStarted);
+
+        Assert.Contains(result.Predecessors, p => p.RelatedTaskId == predecessor.Id && p.Type == RelationshipType.HaveStarted);
     }
 
     // --- DeletePredecessorAsync ---
@@ -474,7 +529,7 @@ public class TaskServiceTests
         var (service, db, _) = CreateService();
         var task = await SeedTask(db, "Task");
         var predecessor = await SeedTask(db, "Predecessor");
-        await service.AddPredecessorAsync(task.Id, predecessor.Id);
+        await service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive);
 
         await service.DeletePredecessorAsync(task.Id, predecessor.Id);
 

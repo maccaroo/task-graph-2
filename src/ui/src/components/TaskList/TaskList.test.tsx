@@ -32,6 +32,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     pinnedPosition: null,
     predecessorIds: [],
     successorIds: [],
+    predecessors: [],
+    successors: [],
     ...overrides,
   }
 }

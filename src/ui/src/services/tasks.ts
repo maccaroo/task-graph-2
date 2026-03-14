@@ -3,6 +3,12 @@ import { api } from '../lib/api'
 export type TaskStatus = 'Incomplete' | 'Complete'
 export type TaskPriority = 'Low' | 'Medium' | 'High'
 export type TimingType = 'None' | 'Fixed' | 'Flexible'
+export type RelationshipType = 'Exclusive' | 'HaveStarted' | 'HaveCompleted' | 'HandOff'
+
+export interface TaskRelationshipInfo {
+  relatedTaskId: string
+  type: RelationshipType
+}
 
 export interface Task {
   id: string
@@ -21,6 +27,8 @@ export interface Task {
   pinnedPosition: { x: number; y: number } | null
   predecessorIds: string[]
   successorIds: string[]
+  predecessors: TaskRelationshipInfo[]
+  successors: TaskRelationshipInfo[]
 }
 
 export interface CreateTaskData {
@@ -51,8 +59,8 @@ export async function updateTaskPosition(id: string, position: { x: number; y: n
   await api.put(`/tasks/${id}/position`, position)
 }
 
-export async function addPredecessor(taskId: string, predecessorId: string): Promise<void> {
-  await api.post(`/tasks/${taskId}/predecessors/${predecessorId}`)
+export async function addPredecessor(taskId: string, predecessorId: string, relationshipType: RelationshipType = 'Exclusive'): Promise<void> {
+  await api.post(`/tasks/${taskId}/predecessors/${predecessorId}`, { relationshipType })
 }
 
 export async function removePredecessor(taskId: string, predecessorId: string): Promise<void> {

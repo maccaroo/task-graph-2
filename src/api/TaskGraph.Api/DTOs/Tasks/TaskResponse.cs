@@ -5,6 +5,9 @@ namespace TaskGraph.Api.DTOs.Tasks;
 
 public record PinnedPositionDto(double X, double Y);
 
+/// <summary>Full relationship info including type, keyed by the related task's ID.</summary>
+public record TaskRelationshipInfo(Guid RelatedTaskId, RelationshipType Type);
+
 public record TaskResponse(
     Guid Id,
     string Title,
@@ -21,5 +24,7 @@ public record TaskResponse(
     TimeSpan? Duration,
     PinnedPositionDto? PinnedPosition,
     List<Guid> PredecessorIds,
-    List<Guid> SuccessorIds
+    List<Guid> SuccessorIds,
+    List<TaskRelationshipInfo> Predecessors,
+    List<TaskRelationshipInfo> Successors
 );
