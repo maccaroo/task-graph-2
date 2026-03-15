@@ -11,7 +11,7 @@ Layout positioning rules (implied position only — not stored as a fixed date):
 - No restricting relationships → placed in the present time block.
 
 ## Graph layout
-Task nodes are auto-positioned based on due dates and dependencies.  Users may pin/override individual node positions; pinned positions are persisted per task.
+Task nodes are auto-positioned based on their start date (falling back to end date for end-only tasks, then open-ended tasks last).  This ordering is stable — adding or removing relationships does not change the visual order of tasks.
 
 
 ## Notifications

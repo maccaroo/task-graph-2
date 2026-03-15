@@ -23,6 +23,10 @@ Each task item in the graph provides a succinct view of a task.  It provides eno
 
 Open-ended tasks (those with no start date and no end date — i.e., no timing constraints on either end) are positioned at the end of the Present time period on the graph.
 
+**Ordering**: Tasks are arranged left-to-right by their anchor date (start date if set, otherwise end date).  Open-ended tasks appear last.  This order is stable and does not change when relationships are added or removed.
+
+**Selection**: Clicking a task selects it and opens the task detail panel.  Clicking the canvas background deselects the current task and closes the panel.
+
 For details of task items, see `task-item.md`.
 
 ### Time axis

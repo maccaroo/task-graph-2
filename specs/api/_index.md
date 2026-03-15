@@ -30,7 +30,6 @@ REST API with JWT authentication.  All endpoints require a valid Bearer token un
 | GET | /tasks/{id} | Get task |
 | PUT | /tasks/{id} | Update task |
 | DELETE | /tasks/{id} | Delete task |
-| PUT | /tasks/{id}/position | Update pinned graph position |
 
 ## Task Relationships
 

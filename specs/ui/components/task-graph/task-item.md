@@ -4,16 +4,13 @@ Shows a succint view of a task within the graph.
 Contains the following:
 - Title
 - Status
-    - Task status affects the colour of the task title and border 
-- Details
-- Summaries:
-    - Time remaining (or time overdue)
-    - Downstream dependent tasks
-        - Count
-        - List of titles (with hyperlinks)
-    - Upstream task dependencies
-        - Count
-        - List of titles (with hyperlinks)
+    - Task status affects the colour of the task title and border
+- A bottom info row with three slots:
+    - Left: predecessor count (e.g. `← 3`)
+    - Centre: due status label (e.g. `2d overdue`, `due today`, `5d left`)
+    - Right: successor count (e.g. `2 →`)
+
+Example bottom row: `← 3   2d overdue   2 →`
 
 ## Anchor widgets
 The task item is rendered with anchor widgets at the front and back.  These can be used create a relationship between one task and another by dragging an anchor widget from one task to the anchor widget of another.  Once a widget starts being dragged, only target widgets for valid relationships are visible.
