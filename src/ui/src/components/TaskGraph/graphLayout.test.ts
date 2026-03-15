@@ -173,7 +173,7 @@ describe('computeAutoLayout', () => {
     expect(pos.y).toBe(CANVAS_PAD_Y)
   })
 
-  it('places predecessors before successors (topological order)', () => {
+  it('places earlier-dated task to the left of later-dated task', () => {
     const viewStart = new Date('2025-01-01')
     const pixelsPerDay = 40
     const tasks = [
@@ -183,7 +183,6 @@ describe('computeAutoLayout', () => {
     const positions = computeAutoLayout(tasks, viewStart, pixelsPerDay)
     const predPos = positions.get('pred')!
     const succPos = positions.get('succ')!
-    // Successor should be to the right of predecessor
     expect(succPos.x).toBeGreaterThan(predPos.x)
   })
 })

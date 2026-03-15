@@ -42,24 +42,6 @@ export function computeViewRange(tasks: Task[]): { viewStart: Date; viewEnd: Dat
   }
 }
 
-function topologicalSort(tasks: Task[]): Task[] {
-  const taskMap = new Map(tasks.map(t => [t.id, t]))
-  const visited = new Set<string>()
-  const result: Task[] = []
-
-  function visit(id: string) {
-    if (visited.has(id)) return
-    visited.add(id)
-    const task = taskMap.get(id)
-    if (!task) return
-    for (const predId of task.predecessorIds) visit(predId)
-    result.push(task)
-  }
-
-  tasks.forEach(t => visit(t.id))
-  return result
-}
-
 export interface TaskPosition {
   x: number
   y: number
@@ -87,11 +69,17 @@ export function computeAutoLayout(
 ): Map<string, TaskPosition> {
   const openEndedEndX = dateToX(presentWeekEnd(), viewStart, pixelsPerDay)
 
-  // Tasks with an end date are sorted topologically; all others use presentWeekEnd as their virtual end
-  const withEnd    = tasks.filter(t =>  t.endDate)
-  const withoutEnd = tasks.filter(t => !t.endDate)
-  const sorted = topologicalSort(withEnd)
-  const allOrdered = [...sorted, ...withoutEnd]
+  // Sort by the card's left-edge anchor date so order is stable and independent of relationships.
+  // Priority: startDate → endDate (end-only) → open-ended (no dates, placed last).
+  const allOrdered = [...tasks].sort((a, b) => {
+    const aMs = a.startDate ? new Date(a.startDate).getTime()
+              : a.endDate   ? new Date(a.endDate).getTime()
+              : Infinity
+    const bMs = b.startDate ? new Date(b.startDate).getTime()
+              : b.endDate   ? new Date(b.endDate).getTime()
+              : Infinity
+    return aMs - bMs
+  })
 
   const positions = new Map<string, TaskPosition>()
   const rowMaxX: number[] = []
