@@ -18,7 +18,6 @@ const BASE: Task = {
   endType: 'Fixed',
   endDate: new Date(Date.now() + 5 * 86_400_000).toISOString(),
   duration: null,
-  pinnedPosition: null,
   predecessorIds: [],
   successorIds: [],
   predecessors: [],
@@ -35,7 +34,6 @@ function renderItem(
   width?: number,
 ) {
   const onSelect = vi.fn()
-  const onDragEnd = vi.fn()
   const onRelationDragStart = vi.fn()
 
   const result = render(
@@ -48,12 +46,11 @@ function renderItem(
       selected={false}
       isDragTarget={false}
       onSelect={onSelect}
-      onDragEnd={onDragEnd}
       onRelationDragStart={onRelationDragStart}
     />,
   )
 
-  return { onSelect, onDragEnd, onRelationDragStart, container: result.container }
+  return { onSelect, onRelationDragStart, container: result.container }
 }
 
 describe('TaskGraphItem', () => {
@@ -134,7 +131,6 @@ describe('TaskGraphItem', () => {
         selected={false}
         isDragTarget={true}
         onSelect={vi.fn()}
-        onDragEnd={vi.fn()}
         onRelationDragStart={vi.fn()}
       />,
     )
@@ -152,7 +148,7 @@ describe('hybrid gradient border (T6)', () => {
     const { container } = render(
       <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
         x={0} y={0} selected={false} isDragTarget={false}
-        onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />,
+        onSelect={vi.fn()} onRelationDragStart={vi.fn()} />,
     )
     // CSS modules hash class names — check className contains "gradient"
     expect((container.firstChild as Element)?.className).toMatch(/gradient/)
@@ -165,7 +161,7 @@ describe('hybrid gradient border (T6)', () => {
     const { container } = render(
       <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
         x={0} y={0} selected={false} isDragTarget={false}
-        onSelect={vi.fn()} onDragEnd={vi.fn()} onRelationDragStart={vi.fn()} />,
+        onSelect={vi.fn()} onRelationDragStart={vi.fn()} />,
     )
     expect((container.firstChild as Element)?.className).not.toMatch(/gradient/)
   })

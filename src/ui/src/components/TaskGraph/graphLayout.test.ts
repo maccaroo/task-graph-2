@@ -27,7 +27,6 @@ const BASE_TASK: Task = {
   endType: 'Fixed',
   endDate: null,
   duration: null,
-  pinnedPosition: null,
   predecessorIds: [],
   successorIds: [],
   predecessors: [],

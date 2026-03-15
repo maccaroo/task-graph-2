@@ -15,7 +15,6 @@ public class TaskItem
     public TimingType EndType { get; set; } = TimingType.None;
     public DateTime? EndDate { get; set; }
     public TimeSpan? Duration { get; set; }
-    public PinnedPosition? PinnedPosition { get; set; }
 
     public ICollection<TaskRelationship> Predecessors { get; set; } = [];
     public ICollection<TaskRelationship> Successors { get; set; } = [];

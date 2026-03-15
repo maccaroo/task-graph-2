@@ -10,7 +10,6 @@ public interface ITaskService
     Task<TaskResponse> CreateAsync(CreateTaskRequest request);
     Task<TaskResponse> UpdateAsync(Guid id, UpdateTaskRequest request);
     Task DeleteAsync(Guid id);
-    Task<TaskResponse> UpdatePositionAsync(Guid id, UpdateTaskPositionRequest request);
     Task<TaskResponse> AddPredecessorAsync(Guid taskId, Guid predecessorId, RelationshipType relationshipType);
     Task DeletePredecessorAsync(Guid taskId, Guid predecessorId);
 }

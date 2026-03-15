@@ -371,30 +371,6 @@ public class TaskServiceTests
             service.DeleteAsync(Guid.NewGuid()));
     }
 
-    // --- UpdatePositionAsync ---
-
-    [Fact]
-    public async Task UpdatePosition_SetsXAndY()
-    {
-        var (service, db, _) = CreateService();
-        var task = await SeedTask(db);
-
-        var result = await service.UpdatePositionAsync(task.Id, new UpdateTaskPositionRequest(10.5, 20.3));
-
-        Assert.NotNull(result.PinnedPosition);
-        Assert.Equal(10.5, result.PinnedPosition.X);
-        Assert.Equal(20.3, result.PinnedPosition.Y);
-    }
-
-    [Fact]
-    public async Task UpdatePosition_UnknownId_ThrowsNotFound()
-    {
-        var (service, _, __) = CreateService();
-
-        await Assert.ThrowsAsync<NotFoundException>(() =>
-            service.UpdatePositionAsync(Guid.NewGuid(), new UpdateTaskPositionRequest(0, 0)));
-    }
-
     // --- AddPredecessorAsync ---
 
     [Fact]

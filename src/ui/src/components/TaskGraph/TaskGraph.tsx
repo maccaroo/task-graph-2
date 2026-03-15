@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addPredecessor,
   getTasks,
-  updateTaskPosition,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -118,7 +117,6 @@ export function TaskGraph() {
   const [showOpenEnded, setShowOpenEnded] = useState(true)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const [pinnedPositions, setPinnedPositions] = useState<Map<string, { x: number; y: number }>>(new Map())
 
   const [relationDrag, setRelationDrag] = useState<RelationDrag | null>(null)
   const [dragTargetId, setDragTargetId] = useState<string | null>(null)
@@ -134,11 +132,6 @@ export function TaskGraph() {
       setTasks(taskData)
       tasksRef.current = taskData
       setUsers(userData)
-      const serverPins = new Map<string, { x: number; y: number }>()
-      for (const t of taskData) {
-        if (t.pinnedPosition) serverPins.set(t.id, t.pinnedPosition)
-      }
-      setPinnedPositions(serverPins)
     } catch {
       setError('Failed to load tasks.')
     } finally {
@@ -205,14 +198,7 @@ export function TaskGraph() {
     [viewStart, viewEnd, pixelsPerDay, numRows],
   )
 
-  const positions = useMemo(() => {
-    const map = new Map(autoPositions)
-    for (const [id, pos] of pinnedPositions) {
-      const auto = map.get(id)
-      if (auto) map.set(id, { ...auto, x: pos.x, y: pos.y })
-    }
-    return map
-  }, [autoPositions, pinnedPositions])
+  const positions = autoPositions
 
   useEffect(() => { positionsRef.current = positions }, [positions])
 
@@ -317,31 +303,6 @@ export function TaskGraph() {
     }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-  }
-
-  // ── Task drag (reposition) ────────────────────────────────────────────────
-
-  function handleTaskDragEnd(id: string, dx: number, dy: number) {
-    const current = positions.get(id)
-    if (!current) return
-    const newPos = { x: current.x + dx, y: current.y + dy }
-    const task = tasks.find(t => t.id === id)
-    if (task) {
-      const newEnd   = xToDate(newPos.x + current.width, viewStart, pixelsPerDay)
-      const newStart = xToDate(newPos.x, viewStart, pixelsPerDay)
-      for (const predId of task.predecessorIds) {
-        const p = positions.get(predId)
-        if (p && newStart < xToDate(p.x + p.width, viewStart, pixelsPerDay)) return
-      }
-      for (const succId of task.successorIds) {
-        const s = positions.get(succId)
-        if (s && newEnd > xToDate(s.x, viewStart, pixelsPerDay)) return
-      }
-    }
-    setPinnedPositions(prev => { const n = new Map(prev); n.set(id, newPos); return n })
-    updateTaskPosition(id, newPos).catch(() => {
-      setPinnedPositions(prev => { const n = new Map(prev); n.delete(id); return n })
-    })
   }
 
   // ── Relation drag (wire tasks together) ───────────────────────────────────
@@ -554,7 +515,6 @@ export function TaskGraph() {
                 selected={selectedTaskId === task.id}
                 isDragTarget={dragTargetId === task.id}
                 onSelect={setSelectedTaskId}
-                onDragEnd={handleTaskDragEnd}
                 onRelationDragStart={handleRelationDragStart}
               />
             )

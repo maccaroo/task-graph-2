@@ -10,7 +10,7 @@
 
 ## P2 - Database Schema & Migrations
 [x] T1 - Create Users table (id, username, first_name, last_name, email, password_hash, avatar_url, configuration JSON)
-[x] T2 - Create Tasks table (id, title, description, assignee_id, status, priority, tags, start_type, start_date, end_type, end_date, duration, pinned_position JSON)
+[x] T2 - Create Tasks table (id, title, description, assignee_id, status, priority, tags, start_type, start_date, end_type, end_date, duration)
 [x] T3 - Create TaskRelationships table (task_id, predecessor_id)
 [x] T4 - Create Notifications table (id, user_id, type, task_id, message, is_read, created_at)
 
@@ -34,9 +34,8 @@
 [x] T3 - Implement GET /tasks/{id}
 [x] T4 - Implement PUT /tasks/{id} (update task fields)
 [x] T5 - Implement DELETE /tasks/{id}
-[x] T6 - Implement PUT /tasks/{id}/position (update pinned graph position)
-[x] T7 - Implement POST /tasks/{id}/predecessors/{predecessorId} (add dependency)
-[x] T8 - Implement DELETE /tasks/{id}/predecessors/{predecessorId} (remove dependency)
+[x] T6 - Implement POST /tasks/{id}/predecessors/{predecessorId} (add dependency)
+[x] T7 - Implement DELETE /tasks/{id}/predecessors/{predecessorId} (remove dependency)
 [x] T9 - Add dependency constraint validation (predecessor end < task start)
 [x] T10 - Add RelationshipType to dependency model (Exclusive, HaveStarted, HaveCompleted, HandOff) with per-type validation
 

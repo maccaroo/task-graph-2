@@ -63,17 +63,6 @@ public class TasksController(ITaskService taskService) : ControllerBase
         catch (NotFoundException ex) { return NotFound(new { error = ex.Message }); }
     }
 
-    [HttpPut("{id:guid}/position")]
-    public async Task<IActionResult> UpdatePosition(Guid id, [FromBody] UpdateTaskPositionRequest request)
-    {
-        try
-        {
-            var task = await taskService.UpdatePositionAsync(id, request);
-            return Ok(task);
-        }
-        catch (NotFoundException ex) { return NotFound(new { error = ex.Message }); }
-    }
-
     [HttpPost("{id:guid}/predecessors/{predecessorId:guid}")]
     public async Task<IActionResult> AddPredecessor(Guid id, Guid predecessorId, [FromBody] AddPredecessorRequest? request)
     {

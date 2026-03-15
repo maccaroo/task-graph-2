@@ -132,16 +132,6 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         await db.SaveChangesAsync();
     }
 
-    public async Task<TaskResponse> UpdatePositionAsync(Guid id, UpdateTaskPositionRequest request)
-    {
-        var task = await db.Tasks.FindAsync(id)
-            ?? throw new NotFoundException($"Task {id} not found.");
-
-        task.PinnedPosition = new PinnedPosition { X = request.X, Y = request.Y };
-        await db.SaveChangesAsync();
-        return ToResponse(await LoadTaskAsync(id));
-    }
-
     public async Task<TaskResponse> AddPredecessorAsync(Guid taskId, Guid predecessorId, RelationshipType relationshipType)
     {
         if (taskId == predecessorId)
@@ -239,7 +229,6 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         t.EndType,
         t.EndDate,
         t.Duration,
-        t.PinnedPosition is { } p ? new PinnedPositionDto(p.X, p.Y) : null,
         t.Predecessors.Select(r => r.PredecessorId).ToList(),
         t.Successors.Select(r => r.TaskId).ToList(),
         t.Predecessors.Select(r => new TaskRelationshipInfo(r.PredecessorId, r.RelationshipType)).ToList(),

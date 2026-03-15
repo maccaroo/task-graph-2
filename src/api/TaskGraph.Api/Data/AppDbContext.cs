@@ -27,7 +27,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasKey(t => t.Id);
             entity.Property(t => t.Id).ValueGeneratedOnAdd();
             entity.Property(t => t.Tags).HasColumnType("text[]");
-            entity.OwnsOne(t => t.PinnedPosition, pos => pos.ToJson());
             entity.HasOne(t => t.Assignee)
                   .WithMany()
                   .HasForeignKey(t => t.AssigneeId)

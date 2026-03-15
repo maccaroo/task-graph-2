@@ -24,7 +24,6 @@ export interface Task {
   endType: TimingType
   endDate: string | null
   duration: string | null
-  pinnedPosition: { x: number; y: number } | null
   predecessorIds: string[]
   successorIds: string[]
   predecessors: TaskRelationshipInfo[]
@@ -55,17 +54,13 @@ export async function createTask(data: CreateTaskData): Promise<Task> {
   return task
 }
 
-export async function updateTaskPosition(id: string, position: { x: number; y: number }): Promise<void> {
-  await api.put(`/tasks/${id}/position`, position)
+export async function updateTask(id: string, data: CreateTaskData): Promise<Task> {
+  const { data: task } = await api.put<Task>(`/tasks/${id}`, data)
+  return task
 }
 
 export async function addPredecessor(taskId: string, predecessorId: string, relationshipType: RelationshipType = 'Exclusive'): Promise<void> {
   await api.post(`/tasks/${taskId}/predecessors/${predecessorId}`, { relationshipType })
-}
-
-export async function updateTask(id: string, data: CreateTaskData): Promise<Task> {
-  const { data: task } = await api.put<Task>(`/tasks/${id}`, data)
-  return task
 }
 
 export async function removePredecessor(taskId: string, predecessorId: string): Promise<void> {

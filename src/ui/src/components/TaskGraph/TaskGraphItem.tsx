@@ -20,7 +20,6 @@ interface TaskGraphItemProps {
   selected: boolean
   isDragTarget: boolean
   onSelect: (id: string) => void
-  onDragEnd: (id: string, deltaX: number, deltaY: number) => void
   onRelationDragStart: (sourceId: string, anchor: AnchorType, clientX: number, clientY: number) => void
 }
 
@@ -64,7 +63,6 @@ export function TaskGraphItem({
   selected,
   isDragTarget,
   onSelect,
-  onDragEnd,
   onRelationDragStart,
 }: TaskGraphItemProps) {
   const dueStatus = computeDueStatus(task)
@@ -72,7 +70,6 @@ export function TaskGraphItem({
   const { startColor, endColor } = borderColors(task)
   const isGradient = startColor !== endColor
 
-  const dragRef = useRef<{ startX: number; startY: number } | null>(null)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [hoverExpanded, setHoverExpanded] = useState(false)
 
@@ -86,32 +83,12 @@ export function TaskGraphItem({
   // Effective rendered width: expand on hover if reduced
   const effectiveWidth = isReduced && hoverExpanded ? CARD_WIDTH : width
 
-  // ── Card drag (reposition) ───────────────────────────────────────────────
+  // ── Card click (select) ──────────────────────────────────────────────────
 
   function handleCardMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
     e.stopPropagation()
-    dragRef.current = { startX: e.clientX, startY: e.clientY }
-
-    function onMove() { /* position updated on drop */ }
-
-    function onUp(me: MouseEvent) {
-      if (dragRef.current) {
-        const dx = me.clientX - dragRef.current.startX
-        const dy = me.clientY - dragRef.current.startY
-        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
-          onDragEnd(task.id, dx, dy)
-        } else {
-          onSelect(task.id)
-        }
-      }
-      dragRef.current = null
-      window.removeEventListener('mousemove', onMove)
-      window.removeEventListener('mouseup', onUp)
-    }
-
-    window.addEventListener('mousemove', onMove)
-    window.addEventListener('mouseup', onUp)
+    onSelect(task.id)
   }
 
   // ── Hover expand (reduced cards only) ────────────────────────────────────
