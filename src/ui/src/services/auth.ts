@@ -40,3 +40,14 @@ export function decodeUserId(token: string): string {
     return ''
   }
 }
+
+/** Returns true if the JWT is missing or its `exp` claim is in the past. */
+export function isTokenExpired(token: string | null): boolean {
+  if (!token) return true
+  try {
+    const { exp } = JSON.parse(atob(token.split('.')[1]))
+    return typeof exp === 'number' && Date.now() >= exp * 1000
+  } catch {
+    return true
+  }
+}

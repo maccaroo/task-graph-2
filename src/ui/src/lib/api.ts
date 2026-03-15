@@ -14,10 +14,14 @@ api.interceptors.request.use(config => {
   return config
 })
 
-// Normalise error responses
+// Normalise error responses; signal auth context on 401 so React state is cleaned up correctly
 api.interceptors.response.use(
   res => res,
   err => {
+    if (err.response?.status === 401) {
+      window.dispatchEvent(new CustomEvent('auth:unauthorized'))
+      return new Promise(() => {}) // suppress further error handling
+    }
     const message: string =
       err.response?.data?.error ??
       err.response?.data?.message ??

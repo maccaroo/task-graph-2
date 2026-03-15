@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { isTokenExpired } from '../services/auth'
 import { AuthContext } from './authContextDef'
 
 interface AuthState {
@@ -26,6 +27,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem(USER_ID_KEY)
     setState({ token: null, userId: null })
   }
+
+  // Log out when the API signals a 401 (token rejected by server)
+  // or when the user returns to the tab and the token has since expired.
+  useEffect(() => {
+    function handleUnauthorized() { logout() }
+    function handleVisibility() {
+      if (!document.hidden && isTokenExpired(localStorage.getItem(TOKEN_KEY))) logout()
+    }
+    window.addEventListener('auth:unauthorized', handleUnauthorized)
+    document.addEventListener('visibilitychange', handleVisibility)
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized)
+      document.removeEventListener('visibilitychange', handleVisibility)
+    }
+  // logout is stable (defined inside component, no deps) — omit from deps to avoid re-registering
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   return (
     <AuthContext.Provider value={{ ...state, login, logout, isAuthenticated: !!state.token }}>
