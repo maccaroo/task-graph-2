@@ -185,14 +185,13 @@ export function TaskGraphItem({
 
         {!isReduced && (
           <div className={styles.meta}>
-            {(task.predecessorIds.length > 0 || task.successorIds.length > 0) && (
-              <span className={styles.deps}>
-                {task.predecessorIds.length > 0 && `← ${task.predecessorIds.length}`}
-                {task.predecessorIds.length > 0 && task.successorIds.length > 0 && '  '}
-                {task.successorIds.length > 0 && `${task.successorIds.length} →`}
-              </span>
-            )}
-            {timeLabel && <span className={styles.timeLabel}>{timeLabel}</span>}
+            <span className={styles.metaLeft}>
+              {task.predecessorIds.length > 0 && `← ${task.predecessorIds.length}`}
+            </span>
+            <span className={styles.metaCenter}>{timeLabel ?? ''}</span>
+            <span className={styles.metaRight}>
+              {task.successorIds.length > 0 && `${task.successorIds.length} →`}
+            </span>
           </div>
         )}
       </div>

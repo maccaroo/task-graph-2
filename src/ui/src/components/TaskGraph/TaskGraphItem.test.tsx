@@ -90,9 +90,10 @@ describe('TaskGraphItem', () => {
     expect(screen.getByText(/1 →/)).toBeInTheDocument()
   })
 
-  it('shows both predecessor and successor counts on one line', () => {
+  it('shows both predecessor and successor counts in separate slots', () => {
     renderItem(makeTask({ predecessorIds: ['p1'], successorIds: ['s1'] }))
-    expect(screen.getByText(/← 1.*1 →/)).toBeInTheDocument()
+    expect(screen.getByText(/← 1/)).toBeInTheDocument()
+    expect(screen.getByText(/1 →/)).toBeInTheDocument()
   })
 
   it('shows no deps line when task has no predecessors or successors', () => {
