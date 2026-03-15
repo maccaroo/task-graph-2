@@ -63,6 +63,11 @@ export async function addPredecessor(taskId: string, predecessorId: string, rela
   await api.post(`/tasks/${taskId}/predecessors/${predecessorId}`, { relationshipType })
 }
 
+export async function updateTask(id: string, data: CreateTaskData): Promise<Task> {
+  const { data: task } = await api.put<Task>(`/tasks/${id}`, data)
+  return task
+}
+
 export async function removePredecessor(taskId: string, predecessorId: string): Promise<void> {
   await api.delete(`/tasks/${taskId}/predecessors/${predecessorId}`)
 }

@@ -11,9 +11,11 @@ import { getUsers, type UserSummary } from '../../services/users'
 import { computeDueStatus, DUE_STATUS_LABEL, type DueStatusKey } from '../../utils/taskStatus'
 import { Button } from '../ui'
 import { AddTaskModal } from '../TaskList/AddTaskModal'
+import { TaskDetailPanel } from './TaskDetailPanel'
 import { TimeAxis } from './TimeAxis'
 import { TaskGraphItem, type AnchorType } from './TaskGraphItem'
 import {
+  CANVAS_PAD_X,
   CANVAS_PAD_Y,
   CARD_HEIGHT,
   MS_PER_DAY,
@@ -104,6 +106,7 @@ function wouldCreateCycle(taskMap: Map<string, Task>, newPredId: string, taskId:
 
 export function TaskGraph() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const [containerWidth, setContainerWidth] = useState(0)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
@@ -145,6 +148,17 @@ export function TaskGraph() {
 
   useEffect(() => { load() }, [load])
 
+  // Track container width so the canvas always fills the visible area when zoomed out.
+  // Depends on `loading` because the canvasContainer isn't rendered until loading is false,
+  // so containerRef.current is null on the very first effect run.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(entries => setContainerWidth(entries[0].contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [loading])
+
   // ── Derived data ──────────────────────────────────────────────────────────
 
   const filtered = useMemo(() => {
@@ -155,10 +169,25 @@ export function TaskGraph() {
 
   const taskMap = useMemo(() => new Map(tasks.map(t => [t.id, t])), [tasks])
 
-  const { viewStart, viewEnd } = useMemo(
+  const { viewStart: rawViewStart, viewEnd: rawViewEnd } = useMemo(
     () => computeViewRange(filtered.length ? filtered : tasks),
     [filtered, tasks],
   )
+
+  // Extend the view range symmetrically so the canvas always fills the full container
+  // width when zoomed out, keeping task content centred rather than left-anchored.
+  const { viewStart, viewEnd } = useMemo(() => {
+    if (!containerWidth) return { viewStart: rawViewStart, viewEnd: rawViewEnd }
+    const rawSpanPx = ((rawViewEnd.getTime() - rawViewStart.getTime()) / MS_PER_DAY) * pixelsPerDay
+    const rawWidth = CANVAS_PAD_X * 2 + rawSpanPx
+    const extraPx = Math.max(0, containerWidth - rawWidth)
+    if (extraPx === 0) return { viewStart: rawViewStart, viewEnd: rawViewEnd }
+    const extraMs = (extraPx / 2 / pixelsPerDay) * MS_PER_DAY
+    return {
+      viewStart: new Date(rawViewStart.getTime() - extraMs),
+      viewEnd:   new Date(rawViewEnd.getTime()   + extraMs),
+    }
+  }, [rawViewStart, rawViewEnd, containerWidth, pixelsPerDay])
 
   const autoPositions = useMemo(
     () => computeAutoLayout(filtered, viewStart, pixelsPerDay),
@@ -553,6 +582,15 @@ export function TaskGraph() {
       </div>
 
       <AddTaskModal open={addOpen} onClose={() => setAddOpen(false)} onCreated={load} />
+
+      <TaskDetailPanel
+        task={selectedTaskId ? (tasks.find(t => t.id === selectedTaskId) ?? null) : null}
+        tasks={tasks}
+        users={users}
+        onClose={() => setSelectedTaskId(null)}
+        onUpdated={load}
+        onSelectTask={setSelectedTaskId}
+      />
     </div>
   )
 }

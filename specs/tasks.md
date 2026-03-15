@@ -119,16 +119,16 @@
 [x] T13 - Update arrow rendering to connect correct anchors per relationship type
 
 ## P15 - Task Detail Panel
-[ ] T1 - Build collapsible Task Detail panel (right edge of graph view)
-[ ] T2 - Editable title (required), description (optional)
-[ ] T3 - Assignee picker (optional)
-[ ] T4 - Completion status toggle (Complete | Incomplete)
-[ ] T5 - Timing section: start type (None | Fixed | Flexible) + date/time picker
-[ ] T6 - Timing section: end type (None | Fixed | Flexible) + date/time picker
-[ ] T7 - Duration field (auto-locked when both start and end are fixed)
-[ ] T8 - Predecessor list with hyperlinks; button to add/remove predecessors
-[ ] T9 - Successor list with hyperlinks
-[ ] T10 - Auto-save with configurable delay (user config: 0–10 s, default 2 s)
+[x] T1 - Build collapsible Task Detail panel (right edge of graph view)
+[x] T2 - Editable title (required), description (optional)
+[x] T3 - Assignee picker (optional)
+[x] T4 - Completion status toggle (Complete | Incomplete)
+[x] T5 - Timing section: start type (None | Fixed | Flexible) + date/time picker
+[x] T6 - Timing section: end type (None | Fixed | Flexible) + date/time picker
+[x] T7 - Duration field (auto-locked when both start and end are fixed)
+[x] T8 - Predecessor list with hyperlinks; button to add/remove predecessors
+[x] T9 - Successor list with hyperlinks
+[x] T10 - Auto-save with configurable delay (user config: 0–10 s, default 2 s)
 
 ## P16 - Dashboard View
 [ ] T1 - Build Dashboard as application entry view
