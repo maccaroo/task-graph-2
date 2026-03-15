@@ -291,6 +291,7 @@ export function TaskGraph() {
 
   function handleCanvasMouseDown(e: React.MouseEvent) {
     if (e.target !== e.currentTarget) return
+    setSelectedTaskId(null)
     panRef.current = { startX: e.clientX, scrollLeft: containerRef.current?.scrollLeft ?? 0 }
     function onMove(me: MouseEvent) {
       if (!panRef.current || !containerRef.current) return
