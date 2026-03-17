@@ -24,11 +24,14 @@
 
 .navLink {
   padding: var(--space-1) var(--space-3);
+  border: none;
   border-radius: var(--radius-md);
+  background: transparent;
   font-size: var(--text-sm);
   font-weight: var(--font-medium);
   color: var(--color-text-secondary);
   text-decoration: none;
+  cursor: pointer;
   transition: background-color var(--transition-fast), color var(--transition-fast);
 }
 
@@ -52,6 +55,7 @@
   font-weight: var(--font-semibold);
   color: var(--color-text);
   letter-spacing: -0.01em;
+  text-decoration: none;
 }
 
 .right {

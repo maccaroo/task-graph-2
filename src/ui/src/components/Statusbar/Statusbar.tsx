@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, useNavigate } from 'react-router-dom'
+import type { TasksView } from '../../layouts/AppShell'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { useNotifications } from '../../hooks/useNotifications'
@@ -9,9 +10,12 @@ import styles from './Statusbar.module.css'
 
 interface StatusbarProps {
   onOpenProfile?: () => void
+  activeView?: TasksView
+  onViewChange?: (view: TasksView) => void
+  onHome?: () => void
 }
 
-export function Statusbar({ onOpenProfile }: StatusbarProps) {
+export function Statusbar({ onOpenProfile, activeView, onViewChange, onHome }: StatusbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { user, avatarVersion } = useCurrentUser()
@@ -67,20 +71,20 @@ export function Statusbar({ onOpenProfile }: StatusbarProps) {
   return (
     <header className={styles.statusbar} role="banner">
       <div className={styles.left}>
-        <span className={styles.appName}>TaskGraph</span>
+        <NavLink to={ROUTES.DASHBOARD} className={styles.appName} onClick={onHome}>TaskGraph</NavLink>
         <nav className={styles.nav} aria-label="Main navigation">
-          <NavLink
-            to={ROUTES.TASKS}
-            className={({ isActive }) => `${styles.navLink}${isActive ? ` ${styles.navLinkActive}` : ''}`}
+          <button
+            className={`${styles.navLink}${activeView === 'list' ? ` ${styles.navLinkActive}` : ''}`}
+            onClick={() => onViewChange?.('list')}
           >
             Tasks
-          </NavLink>
-          <NavLink
-            to={ROUTES.TASK_GRAPH}
-            className={({ isActive }) => `${styles.navLink}${isActive ? ` ${styles.navLinkActive}` : ''}`}
+          </button>
+          <button
+            className={`${styles.navLink}${activeView === 'graph' ? ` ${styles.navLinkActive}` : ''}`}
+            onClick={() => onViewChange?.('graph')}
           >
             Graph
-          </NavLink>
+          </button>
         </nav>
       </div>
 

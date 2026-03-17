@@ -7,8 +7,7 @@ import { LoginView } from './views/auth/LoginView'
 import { PasswordResetRequestView } from './views/auth/PasswordResetRequestView'
 import { PasswordResetView } from './views/auth/PasswordResetView'
 import { RegisterView } from './views/auth/RegisterView'
-import { TaskListView } from './views/tasks/TaskListView'
-import { TaskGraphView } from './views/tasks/TaskGraphView'
+import { DashboardView } from './views/DashboardView'
 
 export const router = createBrowserRouter([
   // Public routes
@@ -24,9 +23,7 @@ export const router = createBrowserRouter([
       {
         element: <AppShell />,
         children: [
-          { path: ROUTES.DASHBOARD,   element: <TaskListView /> },
-          { path: ROUTES.TASKS,       element: <TaskListView /> },
-          { path: ROUTES.TASK_GRAPH,  element: <TaskGraphView /> },
+          { path: ROUTES.DASHBOARD,   element: <DashboardView /> },
           { path: ROUTES.TASK(':id'), element: <Placeholder name="Task Detail" /> },
         ],
       },

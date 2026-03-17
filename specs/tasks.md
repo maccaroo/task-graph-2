@@ -130,9 +130,9 @@
 [x] T10 - Auto-save with configurable delay (user config: 0–10 s, default 2 s)
 
 ## P16 - Dashboard View
-[ ] T1 - Build Dashboard as application entry view
-[ ] T2 - Render default task view (Graph or List) based on user configuration
-[ ] T3 - Layout: Statusbar top + task view fills remaining area
+[x] T1 - Build Dashboard as application entry view
+[x] T2 - Render default task view (Graph or List) based on user configuration
+[x] T3 - Layout: Statusbar top + task view fills remaining area
 
 ## P17 - User Configuration
 [ ] T1 - Persist user config (defaultTasksView, timeAxisDirection, timeAxisPosition, autoSaveDelaySeconds)
