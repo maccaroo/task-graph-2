@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   addPredecessor,
   getTasks,
+  removePredecessor,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -116,6 +117,7 @@ export function TaskGraph() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [showOpenEnded, setShowOpenEnded] = useState(true)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
+  const [selectedRelId, setSelectedRelId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
 
   const [relationDrag, setRelationDrag] = useState<RelationDrag | null>(null)
@@ -231,7 +233,7 @@ export function TaskGraph() {
 
   const arrows = useMemo(() => {
     const filteredIds = new Set(filtered.map(t => t.id))
-    const result: { id: string; fromId: string; toId: string; d: string; dashed: boolean }[] = []
+    const result: { id: string; fromId: string; toId: string; d: string; dashed: boolean; midX: number; midY: number }[] = []
     for (const task of filtered) {
       const toPos = positions.get(task.id)
       if (!toPos) continue
@@ -246,13 +248,36 @@ export function TaskGraph() {
           ? toPos.x : toPos.x + toPos.width
         const y1 = fromPos.y + CARD_HEIGHT / 2
         const y2 = toPos.y   + CARD_HEIGHT / 2
-        const cx = (fromX + toX) / 2
+        const midY = (y1 + y2) / 2
+
+        // Arrows must always arrive at toX from the left (start-side), so time reads
+        // forward. When the direct path lacks enough leftward room, bypass around the
+        // left of both cards so the arrow still arrives rightward.
+        const MIN_SEP = 20
+
+        // cp2.y = midY (not y2) so the path arrives diagonally, aligning the
+        // arrowhead with the visible curve rather than perpendicular to the card edge.
+        let d: string
+        let midX: number
+        if (toX - fromX >= MIN_SEP) {
+          const cx = (fromX + toX) / 2
+          d = `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${midY}, ${toX} ${y2}`
+          midX = cx
+        } else {
+          // Bypass left so arrow always arrives at toX going rightward (start-side)
+          const bypassX = Math.min(fromPos.x, toPos.x) - 50
+          d = `M ${fromX} ${y1} C ${bypassX} ${y1}, ${bypassX} ${midY}, ${toX} ${y2}`
+          midX = (fromX + toX + 6 * bypassX) / 8
+        }
+
         result.push({
           id: `${rel.relatedTaskId}->${task.id}`,
           fromId: rel.relatedTaskId,
           toId: task.id,
-          d: `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${y2}, ${toX} ${y2}`,
+          d,
           dashed: !filteredIds.has(rel.relatedTaskId),
+          midX,
+          midY,
         })
       }
     }
@@ -266,6 +291,21 @@ export function TaskGraph() {
     const x1 = relationDrag.sourceAnchor === 'end' ? src.x + src.width : src.x
     return { x1, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
   }, [relationDrag])
+
+  // IDs of tasks that are anchors of the currently selected relationship
+  const relAnchorIds = useMemo(() => {
+    if (!selectedRelId) return new Set<string>()
+    const [predId, taskId] = selectedRelId.split('->')
+    return new Set([predId, taskId])
+  }, [selectedRelId])
+
+  // ── Relationship delete ────────────────────────────────────────────────────
+
+  async function handleDeleteRelationship(relId: string) {
+    const [predId, taskId] = relId.split('->')
+    setSelectedRelId(null)
+    try { await removePredecessor(taskId, predId); await load() } catch { /* ignore */ }
+  }
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
 
@@ -292,6 +332,7 @@ export function TaskGraph() {
   function handleCanvasMouseDown(e: React.MouseEvent) {
     if (e.target !== e.currentTarget) return
     setSelectedTaskId(null)
+    setSelectedRelId(null)
     panRef.current = { startX: e.clientX, scrollLeft: containerRef.current?.scrollLeft ?? 0 }
     function onMove(me: MouseEvent) {
       if (!panRef.current || !containerRef.current) return
@@ -471,7 +512,28 @@ export function TaskGraph() {
 
           <div className={styles.nowLine} style={{ left: nowX }} aria-label="Current time" />
 
-          <svg className={styles.arrowsSvg} width={canvasWidth} height={canvasHeight} aria-hidden="true">
+          {filtered.map(task => {
+            const pos = positions.get(task.id)
+            if (!pos) return null
+            return (
+              <TaskGraphItem
+                key={task.id}
+                task={task}
+                taskMap={taskMap}
+                x={pos.x}
+                y={pos.y}
+                width={pos.width}
+                selected={selectedTaskId === task.id || relAnchorIds.has(task.id)}
+                isDragTarget={dragTargetId === task.id}
+                onSelect={id => { setSelectedTaskId(id); setSelectedRelId(null) }}
+                onRelationDragStart={handleRelationDragStart}
+              />
+            )
+          })}
+
+          {/* SVG z-index elevates when a relationship is selected so it renders over all cards */}
+          <svg className={styles.arrowsSvg} width={canvasWidth} height={canvasHeight}
+            style={{ pointerEvents: 'none', zIndex: selectedRelId ? 20 : 1 }}>
             <defs>
               <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-border-strong)" />
@@ -484,15 +546,35 @@ export function TaskGraph() {
               </marker>
             </defs>
             {arrows.map(a => {
-              const highlighted = selectedTaskId !== null && (a.fromId === selectedTaskId || a.toId === selectedTaskId)
-              const dimmed = selectedTaskId !== null && !highlighted
+              const relSelected  = a.id === selectedRelId
+              const taskHighlight = selectedTaskId !== null && (a.fromId === selectedTaskId || a.toId === selectedTaskId)
+              const highlighted  = relSelected || taskHighlight
+              const dimmed = !highlighted && (selectedTaskId !== null || selectedRelId !== null)
               return (
-                <path key={a.id} d={a.d} fill="none"
-                  stroke={highlighted ? 'var(--color-primary)' : 'var(--color-border-strong)'}
-                  strokeWidth={highlighted ? 2.5 : 1.5}
-                  strokeDasharray={a.dashed ? '4 4' : undefined}
-                  markerEnd={highlighted ? 'url(#arrowhead-highlighted)' : 'url(#arrowhead)'}
-                  opacity={highlighted ? 1 : dimmed ? 0.2 : 0.6} />
+                <g key={a.id}>
+                  {/* Invisible wide hit area for click detection */}
+                  <path d={a.d} fill="none" stroke="transparent" strokeWidth={12}
+                    style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                    onClick={() => { setSelectedRelId(a.id); setSelectedTaskId(null) }} />
+                  {/* Visible arrow */}
+                  <path d={a.d} fill="none"
+                    stroke={highlighted ? 'var(--color-primary)' : 'var(--color-border-strong)'}
+                    strokeWidth={highlighted ? 2.5 : 1.5}
+                    strokeDasharray={a.dashed ? '4 4' : undefined}
+                    markerEnd={highlighted ? 'url(#arrowhead-highlighted)' : 'url(#arrowhead)'}
+                    opacity={highlighted ? 1 : dimmed ? 0.2 : 0.6} />
+                  {/* Delete button — only on the selected relationship */}
+                  {relSelected && (
+                    <g transform={`translate(${a.midX}, ${a.midY})`}
+                      style={{ pointerEvents: 'all', cursor: 'pointer' }}
+                      onClick={() => handleDeleteRelationship(a.id)}
+                      aria-label="Remove relationship">
+                      <circle r={10} fill="var(--color-danger)" />
+                      <text textAnchor="middle" dominantBaseline="central"
+                        fill="white" fontSize={14} style={{ userSelect: 'none' }}>×</text>
+                    </g>
+                  )}
+                </g>
               )
             })}
             {dragLine && (
@@ -501,25 +583,6 @@ export function TaskGraph() {
                 markerEnd="url(#arrowhead-drag)" opacity="0.8" />
             )}
           </svg>
-
-          {filtered.map(task => {
-            const pos = positions.get(task.id)
-            if (!pos) return null
-            return (
-              <TaskGraphItem
-                key={task.id}
-                task={task}
-                taskMap={taskMap}
-                x={pos.x}
-                y={pos.y}
-                width={pos.width}
-                selected={selectedTaskId === task.id}
-                isDragTarget={dragTargetId === task.id}
-                onSelect={setSelectedTaskId}
-                onRelationDragStart={handleRelationDragStart}
-              />
-            )
-          })}
         </div>
 
 

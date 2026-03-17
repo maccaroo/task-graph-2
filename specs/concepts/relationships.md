@@ -45,7 +45,10 @@ A task with no explicit date may still carry an implied position derived from it
 ## Graph visualisation
 
 - Relationships are drawn as curved arrows from a predecessor's anchor to a successor's anchor.
+- Each arrow's arrowhead aligns with the curve's arrival direction (not perpendicular to the card surface).
+- Arrows always arrive at the target anchor from the left (start-side), so the direction of every arrow reads as forward in time.  When the direct path would travel backward or be too short, the path bypasses to the left of both cards before curving back rightward to the target.
 - Arrows involving a task outside the current filter set are shown as dashed lines.
 - Arrows connected to the selected task are highlighted.
+- Clicking a relationship line selects it: the line and its two anchor tasks are highlighted, the line renders above all task cards, and a delete button appears at the midpoint of the line allowing the relationship to be removed.
 - A new relationship can be created by dragging an anchor widget of a task onto an anchor widget of another task.
   - Dragging is only permitted when the resulting relationship would be valid.
