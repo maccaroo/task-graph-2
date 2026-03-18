@@ -104,25 +104,60 @@ interface TimeAxisProps {
   viewStart: Date
   viewEnd: Date
   pixelsPerDay: number
-  canvasWidth: number
-  position?: 'top' | 'bottom'
+  /** Total canvas width (horizontal mode) or canvas height (vertical mode). */
+  canvasSize: number
+  position?: 'top' | 'bottom' | 'left' | 'right'
 }
 
-export function TimeAxis({ viewStart, viewEnd, pixelsPerDay, canvasWidth, position = 'top' }: TimeAxisProps) {
+export function TimeAxis({ viewStart, viewEnd, pixelsPerDay, canvasSize, position = 'top' }: TimeAxisProps) {
+  const isVertical = position === 'left' || position === 'right'
+
   const ticks = useMemo(
-    () => computeTicks(viewStart, viewEnd, pixelsPerDay, canvasWidth),
-    [viewStart, viewEnd, pixelsPerDay, canvasWidth],
+    () => computeTicks(viewStart, viewEnd, pixelsPerDay, canvasSize),
+    [viewStart, viewEnd, pixelsPerDay, canvasSize],
   )
 
   const bands = useMemo(
-    () => computePeriodBands(viewStart, pixelsPerDay, canvasWidth),
-    [viewStart, pixelsPerDay, canvasWidth],
+    () => computePeriodBands(viewStart, pixelsPerDay, canvasSize),
+    [viewStart, pixelsPerDay, canvasSize],
   )
+
+  if (isVertical) {
+    const posClass = position === 'right' ? styles.right : styles.left
+    return (
+      <div
+        className={`${styles.axisVertical} ${posClass}`}
+        style={{ height: canvasSize }}
+        aria-hidden="true"
+      >
+        {bands.map((band, i) => (
+          <div
+            key={`band-${i}`}
+            className={`${styles.periodBandV} ${BAND_CLASS[band.statusKey] ?? ''}`}
+            style={{ top: band.x, height: band.width }}
+          >
+            <span
+              className={styles.periodLabelV}
+              style={{ color: DUE_STATUS_COLOR_VAR[band.statusKey] }}
+            >
+              {band.label}
+            </span>
+          </div>
+        ))}
+        {ticks.map((tick, i) => (
+          <div key={i} className={`${styles.tickV} ${tick.major ? styles.major : ''}`} style={{ top: tick.x }}>
+            <div className={styles.lineV} />
+            {tick.major && <span className={styles.labelV}>{tick.label}</span>}
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <div
       className={`${styles.axis} ${position === 'bottom' ? styles.bottom : styles.top}`}
-      style={{ width: canvasWidth }}
+      style={{ width: canvasSize }}
       aria-hidden="true"
     >
       {bands.map((band, i) => (

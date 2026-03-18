@@ -23,7 +23,13 @@ Each task item in the graph provides a succinct view of a task.  It provides eno
 
 Open-ended tasks (those with no start date and no end date — i.e., no timing constraints on either end) are positioned at the end of the Present time period on the graph.
 
-**Ordering**: Tasks are arranged left-to-right by their anchor date (start date if set, otherwise end date).  Open-ended tasks appear last.  This order is stable and does not change when relationships are added or removed.
+**Ordering**: In horizontal mode, tasks are arranged left-to-right by their anchor date (start date if set, otherwise end date).  In vertical mode, tasks are arranged top-to-bottom by anchor date.  Open-ended tasks appear last.  This order is stable and does not change when relationships are added or removed.
+
+#### Layout Modes
+
+**Horizontal** (default): Time runs left-to-right.  Tasks are placed in vertical columns; each column holds tasks that share the same anchor-date slot.  Column width is fixed.
+
+**Vertical**: Time runs top-to-bottom.  Tasks are placed in horizontal rows; each row holds tasks that share the same anchor-date slot.  Column (lane) width expands dynamically to fill all available viewport width — `effectiveColWidth = max(COL_WIDTH, floor((viewportWidth − axisSize) / numColumns))` — so no large empty gaps appear in wide viewports.  When direction switches to Vertical the view scrolls to centre on the current date automatically.
 
 **Selection**: Clicking a task selects it and opens the task detail panel.  Clicking the canvas background deselects the current task and closes the panel.
 

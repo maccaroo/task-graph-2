@@ -71,6 +71,19 @@ public class UsersController(IUserService userService) : ControllerBase
         catch (ValidationException ex) { return BadRequest(new { error = ex.Message }); }
     }
 
+    [HttpPut("{id:guid}/configuration")]
+    public async Task<IActionResult> UpdateConfiguration(Guid id, [FromBody] UpdateUserConfigurationRequest request)
+    {
+        try
+        {
+            var user = await userService.UpdateConfigurationAsync(id, GetRequesterId(), request);
+            return Ok(user);
+        }
+        catch (UnauthorizedException ex) { return Unauthorized(new { error = ex.Message }); }
+        catch (NotFoundException ex) { return NotFound(new { error = ex.Message }); }
+        catch (ValidationException ex) { return BadRequest(new { error = ex.Message }); }
+    }
+
     private Guid GetRequesterId() =>
         Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)
             ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub)

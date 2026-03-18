@@ -15,6 +15,12 @@ const mockUser = {
   lastName: 'Smith',
   email: 'alice@example.com',
   avatarUrl: null,
+  configuration: {
+    defaultTasksView: 'Graph' as const,
+    timeAxisDirection: 'Horizontal' as const,
+    timeAxisPosition: 'Top' as const,
+    autoSaveDelaySeconds: 2,
+  },
 }
 
 const mockRefresh = vi.fn()
@@ -26,6 +32,7 @@ vi.mock('../../hooks/useCurrentUser', () => ({
 vi.mock('../../services/users', () => ({
   updateUser: vi.fn(),
   updateAvatar: vi.fn(),
+  updateUserConfiguration: vi.fn(),
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -71,7 +78,7 @@ describe('UserProfileModal', () => {
 
   it('renders Save and Reset password buttons', () => {
     renderModal()
-    expect(screen.getByRole('button', { name: /save/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /reset password/i })).toBeInTheDocument()
   })
 

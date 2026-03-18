@@ -41,8 +41,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.removeEventListener('auth:unauthorized', handleUnauthorized)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  // logout is stable (defined inside component, no deps) — omit from deps to avoid re-registering
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

@@ -4,7 +4,7 @@ import { Button, Input, Modal } from '../ui'
 import { useAuth } from '../../hooks/useAuth'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import { ROUTES } from '../../routeConstants'
-import { updateUser, updateAvatar, type AvatarCrop } from '../../services/users'
+import { updateUser, updateAvatar, updateUserConfiguration, type AvatarCrop, type UserConfiguration } from '../../services/users'
 import { AvatarCropPicker } from './AvatarCropPicker'
 import styles from './UserProfileModal.module.css'
 
@@ -20,7 +20,7 @@ interface UserProfileModalProps {
 export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
   const navigate = useNavigate()
   const { userId } = useAuth()
-  const { user, loading, avatarVersion, refresh } = useCurrentUser()
+  const { user, avatarVersion, refresh } = useCurrentUser()
 
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -35,6 +35,11 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const [defaultTasksView, setDefaultTasksView] = useState<UserConfiguration['defaultTasksView']>('Graph')
+  const [timeAxisDirection, setTimeAxisDirection] = useState<UserConfiguration['timeAxisDirection']>('Horizontal')
+  const [timeAxisPosition, setTimeAxisPosition] = useState<UserConfiguration['timeAxisPosition']>('Top')
+  const [autoSaveDelaySeconds, setAutoSaveDelaySeconds] = useState(2)
+
   // Populate form fields when the modal opens.
   // Intentionally NOT re-syncing on every `user` change: a background refresh
   // (e.g. after avatar upload) must not overwrite unsaved edits in the form.
@@ -43,6 +48,10 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
       setFirstName(user.firstName)
       setLastName(user.lastName)
       setEmail(user.email)
+      setDefaultTasksView(user.configuration.defaultTasksView)
+      setTimeAxisDirection(user.configuration.timeAxisDirection)
+      setTimeAxisPosition(user.configuration.timeAxisPosition)
+      setAutoSaveDelaySeconds(user.configuration.autoSaveDelaySeconds)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -55,6 +64,37 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
       setSaveError('')
     }
   }, [open])
+
+  // Immediately persist and apply a config change (direction/position) without waiting for Save.
+  async function applyConfigChange(patch: Partial<{
+    timeAxisDirection: UserConfiguration['timeAxisDirection']
+    timeAxisPosition: UserConfiguration['timeAxisPosition']
+  }>) {
+    if (!userId) return
+    await updateUserConfiguration(userId, {
+      defaultTasksView,
+      timeAxisDirection,
+      timeAxisPosition,
+      autoSaveDelaySeconds,
+      ...patch,
+    })
+    await refresh()
+  }
+
+  async function handleDirectionChange(newDirection: UserConfiguration['timeAxisDirection']) {
+    // Reset position to a valid value for the new direction
+    const newPosition = newDirection === 'Horizontal'
+      ? (timeAxisPosition === 'Left' || timeAxisPosition === 'Right' ? 'Top' : timeAxisPosition)
+      : (timeAxisPosition === 'Top' || timeAxisPosition === 'Bottom' ? 'Left' : timeAxisPosition)
+    setTimeAxisDirection(newDirection)
+    setTimeAxisPosition(newPosition)
+    await applyConfigChange({ timeAxisDirection: newDirection, timeAxisPosition: newPosition })
+  }
+
+  async function handlePositionChange(newPosition: UserConfiguration['timeAxisPosition']) {
+    setTimeAxisPosition(newPosition)
+    await applyConfigChange({ timeAxisPosition: newPosition })
+  }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -98,11 +138,19 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
     if (!userId) return
     setSaving(true)
     try {
-      await updateUser(userId, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
-        email: email.trim(),
-      })
+      await Promise.all([
+        updateUser(userId, {
+          firstName: firstName.trim(),
+          lastName: lastName.trim(),
+          email: email.trim(),
+        }),
+        updateUserConfiguration(userId, {
+          defaultTasksView,
+          timeAxisDirection,
+          timeAxisPosition,
+          autoSaveDelaySeconds,
+        }),
+      ])
       await refresh()
       onClose()
     } catch (err) {
@@ -117,7 +165,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
     navigate(ROUTES.PASSWORD_RESET_REQUEST)
   }
 
-  if (loading) return null
+  if (!user) return null
 
   return (
     <Modal open={open} onClose={onClose} title="User Profile" width="520px">
@@ -163,7 +211,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
             )}
           </div>
 
-          {/* Profile form */}
           <form onSubmit={handleSave} className={styles.form} noValidate>
             {saveError && <p className={styles.formError} role="alert">{saveError}</p>}
 
@@ -196,6 +243,87 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
               onChange={e => setEmail(e.target.value)}
               autoComplete="email"
             />
+
+            <hr className={styles.divider} />
+            <p className={styles.sectionTitle}>Settings</p>
+
+            <div className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Default tasks view</span>
+              <div className={styles.radioGroup}>
+                {(['Graph', 'List'] as const).map(v => (
+                  <label key={v} className={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="defaultTasksView"
+                      value={v}
+                      checked={defaultTasksView === v}
+                      onChange={() => setDefaultTasksView(v)}
+                    />
+                    <span>{v}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Time axis direction</span>
+              <div className={styles.radioGroup}>
+                {(['Horizontal', 'Vertical'] as const).map(v => (
+                  <label key={v} className={styles.radioLabel}>
+                    <input
+                      type="radio"
+                      name="timeAxisDirection"
+                      value={v}
+                      checked={timeAxisDirection === v}
+                      onChange={() => handleDirectionChange(v)}
+                    />
+                    <span>{v}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Time axis position</span>
+              <div className={styles.radioGroup}>
+                {(['Top', 'Bottom', 'Left', 'Right'] as const).map(v => {
+                  const disabled =
+                    (timeAxisDirection === 'Horizontal' && (v === 'Left' || v === 'Right')) ||
+                    (timeAxisDirection === 'Vertical' && (v === 'Top' || v === 'Bottom'))
+                  return (
+                    <label key={v} className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="timeAxisPosition"
+                        value={v}
+                        checked={timeAxisPosition === v}
+                        onChange={() => handlePositionChange(v)}
+                        disabled={disabled}
+                      />
+                      <span>{v}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className={styles.fieldGroup}>
+              <span className={styles.fieldLabel}>Auto-save delay: {autoSaveDelaySeconds}s</span>
+              <div className={styles.sliderRow}>
+                <span className={styles.sliderValue}>0</span>
+                <input
+                  type="range"
+                  className={styles.slider}
+                  min={0}
+                  max={10}
+                  step={1}
+                  value={autoSaveDelaySeconds}
+                  onChange={e => setAutoSaveDelaySeconds(Number(e.target.value))}
+                  aria-label="Auto-save delay in seconds"
+                />
+                <span className={styles.sliderValue}>10</span>
+              </div>
+            </div>
 
             <div className={styles.actions}>
               <Button type="button" variant="ghost" onClick={handleResetPassword}>

@@ -135,8 +135,11 @@
 [x] T3 - Layout: Statusbar top + task view fills remaining area
 
 ## P17 - User Configuration
-[ ] T1 - Persist user config (defaultTasksView, timeAxisDirection, timeAxisPosition, autoSaveDelaySeconds)
-[ ] T2 - Settings UI accessible from user profile or dedicated settings panel
+[x] T1 - Persist user config (defaultTasksView, timeAxisDirection, timeAxisPosition, autoSaveDelaySeconds)
+[x] T2 - Settings UI accessible from user profile or dedicated settings panel
+[x] T3 - Fix: changing defaultTasksView must not change the current view mid-session
+[x] T4 - Fix: changing timeAxisDirection must update the current graph view
+[x] T5 - Fix: changing timeAxisPosition must update the current graph view
 
 ## P18 - User Management View
 [ ] T1 - Build User Management view (list users with task count summary by status)

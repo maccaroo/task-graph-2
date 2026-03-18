@@ -1,5 +1,12 @@
 import { api } from '../lib/api'
 
+export interface UserConfiguration {
+  defaultTasksView: 'Graph' | 'List'
+  timeAxisDirection: 'Horizontal' | 'Vertical'
+  timeAxisPosition: 'Top' | 'Bottom' | 'Left' | 'Right'
+  autoSaveDelaySeconds: number
+}
+
 export interface User {
   id: string
   username: string
@@ -7,6 +14,7 @@ export interface User {
   lastName: string
   email: string
   avatarUrl: string | null
+  configuration: UserConfiguration
 }
 
 export interface AvatarCrop {
@@ -41,6 +49,11 @@ export async function updateUser(
   payload: { firstName: string; lastName: string; email: string }
 ): Promise<User> {
   const { data } = await api.put<User>(`/users/${id}`, payload)
+  return data
+}
+
+export async function updateUserConfiguration(id: string, config: UserConfiguration): Promise<User> {
+  const { data } = await api.put<User>(`/users/${id}/configuration`, config)
   return data
 }
 

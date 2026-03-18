@@ -17,6 +17,8 @@ interface TaskGraphItemProps {
   y: number
   /** Rendered card width. Defaults to CARD_WIDTH. */
   width?: number
+  /** Rendered card height. Used in vertical mode for both-constrained tasks. */
+  height?: number
   selected: boolean
   isDragTarget: boolean
   onSelect: (id: string) => void
@@ -60,6 +62,7 @@ export function TaskGraphItem({
   x,
   y,
   width = CARD_WIDTH,
+  height,
   selected,
   isDragTarget,
   onSelect,
@@ -120,6 +123,7 @@ export function TaskGraphItem({
     left: x,
     top: y,
     width: effectiveWidth,
+    ...(height !== undefined ? { height } : {}),
     '--start-color': startColor,
     '--end-color': endColor,
     '--status-color': DUE_STATUS_COLOR_VAR[dueStatus],

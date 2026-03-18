@@ -134,6 +134,47 @@
   z-index: 0;
 }
 
+/* ── Vertical decorative variants ─────────────────── */
+
+.weekBandV {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background: rgba(91, 76, 245, 0.06);
+  border-top: 1px solid rgba(91, 76, 245, 0.2);
+  border-bottom: 1px solid rgba(91, 76, 245, 0.2);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.nowLineV {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-danger);
+  opacity: 0.7;
+  pointer-events: none;
+  z-index: 1;
+  transform: translateY(-1px);
+}
+
+.gapV {
+  position: absolute;
+  left: 0;
+  right: 0;
+  background-image: repeating-linear-gradient(
+    180deg,
+    transparent,
+    transparent 6px,
+    var(--color-border) 6px,
+    var(--color-border) 7px
+  );
+  opacity: 0.4;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* ── SVG arrows ───────────────────────────────────── */
 
 .arrowsSvg {

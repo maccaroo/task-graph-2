@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import {
   addPredecessor,
   getTasks,
@@ -15,19 +15,27 @@ import { TaskDetailPanel } from './TaskDetailPanel'
 import { TimeAxis } from './TimeAxis'
 import { TaskGraphItem, type AnchorType } from './TaskGraphItem'
 import {
+  AXIS_SIZE,
   CANVAS_PAD_X,
   CANVAS_PAD_Y,
   CARD_HEIGHT,
+  CARD_WIDTH,
+  COL_WIDTH,
   MS_PER_DAY,
   ROW_HEIGHT,
   computeAutoLayout,
+  computeAutoLayoutVertical,
   computeCanvasSize,
+  computeCanvasSizeVertical,
   computeViewRange,
   dateToX,
+  dateToY,
   xToDate,
+  yToDate,
   type TaskPosition,
 } from './graphLayout'
 import { resolveRelationship } from './TaskGraph.utils'
+import { useCurrentUser } from '../../hooks/useCurrentUser'
 import styles from './TaskGraph.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -105,6 +113,9 @@ function wouldCreateCycle(taskMap: Map<string, Task>, newPredId: string, taskId:
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function TaskGraph() {
+  const { user } = useCurrentUser()
+  const config = user?.configuration
+  const vertical = config?.timeAxisDirection === 'Vertical'
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
 
@@ -170,9 +181,9 @@ export function TaskGraph() {
   )
 
   // Extend the view range symmetrically so the canvas always fills the full container
-  // width when zoomed out, keeping task content centred rather than left-anchored.
+  // width when zoomed out (horizontal mode only).
   const { viewStart, viewEnd } = useMemo(() => {
-    if (!containerWidth) return { viewStart: rawViewStart, viewEnd: rawViewEnd }
+    if (!containerWidth || vertical) return { viewStart: rawViewStart, viewEnd: rawViewEnd }
     const rawSpanPx = ((rawViewEnd.getTime() - rawViewStart.getTime()) / MS_PER_DAY) * pixelsPerDay
     const rawWidth = CANVAS_PAD_X * 2 + rawSpanPx
     const extraPx = Math.max(0, containerWidth - rawWidth)
@@ -182,52 +193,89 @@ export function TaskGraph() {
       viewStart: new Date(rawViewStart.getTime() - extraMs),
       viewEnd:   new Date(rawViewEnd.getTime()   + extraMs),
     }
-  }, [rawViewStart, rawViewEnd, containerWidth, pixelsPerDay])
+  }, [rawViewStart, rawViewEnd, containerWidth, pixelsPerDay, vertical])
 
   const autoPositions = useMemo(
-    () => computeAutoLayout(filtered, viewStart, pixelsPerDay),
-    [filtered, viewStart, pixelsPerDay],
+    () => vertical
+      ? computeAutoLayoutVertical(filtered, viewStart, pixelsPerDay)
+      : computeAutoLayout(filtered, viewStart, pixelsPerDay),
+    [filtered, viewStart, pixelsPerDay, vertical],
   )
 
   const numRows = useMemo(() => {
+    if (vertical) {
+      const xs = [...autoPositions.values()].map(p => p.x)
+      if (!xs.length) return 1
+      return Math.floor((Math.max(...xs) - AXIS_SIZE) / COL_WIDTH) + 1
+    }
     const ys = [...autoPositions.values()].map(p => p.y)
     if (!ys.length) return 1
     return Math.floor((Math.max(...ys) - CANVAS_PAD_Y) / ROW_HEIGHT) + 1
-  }, [autoPositions])
+  }, [autoPositions, vertical])
 
-  const { width: canvasWidth, height: canvasHeight } = useMemo(
-    () => computeCanvasSize(viewStart, viewEnd, pixelsPerDay, numRows),
-    [viewStart, viewEnd, pixelsPerDay, numRows],
-  )
+  // In vertical mode, expand columns to fill the available container width instead of
+  // using a fixed COL_WIDTH. containerWidth is tracked via ResizeObserver.
+  const effectiveColWidth = useMemo(() => {
+    if (!vertical || !containerWidth) return COL_WIDTH
+    return Math.max(COL_WIDTH, Math.floor((containerWidth - AXIS_SIZE) / Math.max(numRows, 1)))
+  }, [vertical, containerWidth, numRows])
 
-  const positions = autoPositions
+  const { width: canvasWidth, height: canvasHeight } = useMemo(() => {
+    if (vertical) {
+      const { height } = computeCanvasSizeVertical(viewStart, viewEnd, pixelsPerDay, numRows)
+      return { width: AXIS_SIZE + Math.max(numRows, 1) * effectiveColWidth, height }
+    }
+    return computeCanvasSize(viewStart, viewEnd, pixelsPerDay, numRows)
+  }, [viewStart, viewEnd, pixelsPerDay, numRows, vertical, effectiveColWidth])
+
+  // In vertical mode, remap card x-positions and widths to use effectiveColWidth.
+  const positions = useMemo(() => {
+    if (!vertical || effectiveColWidth === COL_WIDTH) return autoPositions
+    const result = new Map<string, TaskPosition>()
+    for (const [id, pos] of autoPositions) {
+      const colIndex = Math.round((pos.x - AXIS_SIZE) / COL_WIDTH)
+      result.set(id, {
+        ...pos,
+        x: AXIS_SIZE + colIndex * effectiveColWidth,
+        // Keep the same right-margin as the default layout (COL_WIDTH - CARD_WIDTH = 20px)
+        width: effectiveColWidth - (COL_WIDTH - CARD_WIDTH),
+      })
+    }
+    return result
+  }, [autoPositions, vertical, effectiveColWidth])
 
   useEffect(() => { positionsRef.current = positions }, [positions])
 
-  const nowX = useMemo(() => dateToX(new Date(), viewStart, pixelsPerDay), [viewStart, pixelsPerDay])
+  // nowLine: vertical strip in horizontal mode; horizontal strip in vertical mode
+  const nowLine = useMemo((): CSSProperties => vertical
+    ? { top: dateToY(new Date(), viewStart, pixelsPerDay) }
+    : { left: dateToX(new Date(), viewStart, pixelsPerDay) },
+    [viewStart, pixelsPerDay, vertical])
 
-  const weekBand = useMemo(() => ({
-    x: dateToX(weekStart(new Date()), viewStart, pixelsPerDay),
-    width: 7 * pixelsPerDay,
-  }), [viewStart, pixelsPerDay])
+  const weekBand = useMemo((): CSSProperties => vertical
+    ? { top: dateToY(weekStart(new Date()), viewStart, pixelsPerDay), height: 7 * pixelsPerDay }
+    : { left: dateToX(weekStart(new Date()), viewStart, pixelsPerDay), width: 7 * pixelsPerDay },
+    [viewStart, pixelsPerDay, vertical])
 
   const gaps = useMemo(() => {
     const dates = filtered.filter(t => t.endDate)
       .flatMap(t => [t.startDate, t.endDate].filter(Boolean) as string[])
       .map(s => new Date(s).getTime())
       .sort((a, b) => a - b)
-    const result: { x: number; width: number }[] = []
+    const result: CSSProperties[] = []
     for (let i = 1; i < dates.length; i++) {
       if ((dates[i] - dates[i - 1]) / MS_PER_DAY > 14) {
-        result.push({
-          x: dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay),
-          width: dateToX(new Date(dates[i]), viewStart, pixelsPerDay)
-                - dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay),
-        })
+        const from = vertical
+          ? dateToY(new Date(dates[i - 1]), viewStart, pixelsPerDay)
+          : dateToX(new Date(dates[i - 1]), viewStart, pixelsPerDay)
+        const to = vertical
+          ? dateToY(new Date(dates[i]), viewStart, pixelsPerDay)
+          : dateToX(new Date(dates[i]), viewStart, pixelsPerDay)
+        result.push(vertical ? { top: from, height: to - from } : { left: from, width: to - from })
       }
     }
     return result
-  }, [filtered, viewStart, pixelsPerDay])
+  }, [filtered, viewStart, pixelsPerDay, vertical])
 
   // ── Arrows ────────────────────────────────────────────────────────────────
 
@@ -240,34 +288,48 @@ export function TaskGraph() {
       for (const rel of task.predecessors) {
         const fromPos = positions.get(rel.relatedTaskId)
         if (!fromPos) continue
-        // Predecessor anchor: end for Exclusive/HaveCompleted, start for HaveStarted/HandOff
-        const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
-          ? fromPos.x + fromPos.width : fromPos.x
-        // Successor anchor: start for Exclusive/HaveStarted, end for HaveCompleted/HandOff
-        const toX = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
-          ? toPos.x : toPos.x + toPos.width
-        const y1 = fromPos.y + CARD_HEIGHT / 2
-        const y2 = toPos.y   + CARD_HEIGHT / 2
-        const midY = (y1 + y2) / 2
 
-        // Arrows must always arrive at toX from the left (start-side), so time reads
-        // forward. When the direct path lacks enough leftward room, bypass around the
-        // left of both cards so the arrow still arrives rightward.
         const MIN_SEP = 20
-
-        // cp2.y = midY (not y2) so the path arrives diagonally, aligning the
-        // arrowhead with the visible curve rather than perpendicular to the card edge.
         let d: string
         let midX: number
-        if (toX - fromX >= MIN_SEP) {
-          const cx = (fromX + toX) / 2
-          d = `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${midY}, ${toX} ${y2}`
-          midX = cx
+        let midY: number
+
+        if (vertical) {
+          // Vertical mode: time on Y axis, lanes on X axis
+          const fromY = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
+            ? fromPos.y + (fromPos.height ?? CARD_HEIGHT) : fromPos.y
+          const toY = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
+            ? toPos.y : toPos.y + (toPos.height ?? CARD_HEIGHT)
+          const x1 = fromPos.x + fromPos.width / 2
+          const x2 = toPos.x + toPos.width / 2
+          midX = (x1 + x2) / 2
+          if (toY - fromY >= MIN_SEP) {
+            const cy = (fromY + toY) / 2
+            d = `M ${x1} ${fromY} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${toY}`
+            midY = cy
+          } else {
+            const bypassY = Math.min(fromPos.y, toPos.y) - 50
+            d = `M ${x1} ${fromY} C ${x1} ${bypassY}, ${x2} ${bypassY}, ${x2} ${toY}`
+            midY = (fromY + toY + 6 * bypassY) / 8
+          }
         } else {
-          // Bypass left so arrow always arrives at toX going rightward (start-side)
-          const bypassX = Math.min(fromPos.x, toPos.x) - 50
-          d = `M ${fromX} ${y1} C ${bypassX} ${y1}, ${bypassX} ${midY}, ${toX} ${y2}`
-          midX = (fromX + toX + 6 * bypassX) / 8
+          // Horizontal mode: time on X axis, lanes on Y axis
+          const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
+            ? fromPos.x + fromPos.width : fromPos.x
+          const toX = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
+            ? toPos.x : toPos.x + toPos.width
+          const y1 = fromPos.y + CARD_HEIGHT / 2
+          const y2 = toPos.y   + CARD_HEIGHT / 2
+          midY = (y1 + y2) / 2
+          if (toX - fromX >= MIN_SEP) {
+            const cx = (fromX + toX) / 2
+            d = `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${midY}, ${toX} ${y2}`
+            midX = cx
+          } else {
+            const bypassX = Math.min(fromPos.x, toPos.x) - 50
+            d = `M ${fromX} ${y1} C ${bypassX} ${y1}, ${bypassX} ${midY}, ${toX} ${y2}`
+            midX = (fromX + toX + 6 * bypassX) / 8
+          }
         }
 
         result.push({
@@ -282,15 +344,19 @@ export function TaskGraph() {
       }
     }
     return result
-  }, [filtered, positions])
+  }, [filtered, positions, vertical])
 
   const dragLine = useMemo(() => {
     if (!relationDrag) return null
     const src = positionsRef.current.get(relationDrag.sourceId)
     if (!src) return null
+    if (vertical) {
+      const y1 = relationDrag.sourceAnchor === 'end' ? src.y + (src.height ?? CARD_HEIGHT) : src.y
+      return { x1: src.x + src.width / 2, y1, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
+    }
     const x1 = relationDrag.sourceAnchor === 'end' ? src.x + src.width : src.x
     return { x1, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
-  }, [relationDrag])
+  }, [relationDrag, vertical])
 
   // IDs of tasks that are anchors of the currently selected relationship
   const relAnchorIds = useMemo(() => {
@@ -315,28 +381,45 @@ export function TaskGraph() {
     const container = containerRef.current
     if (!container) return
     const rect = container.getBoundingClientRect()
-    const mouseX = e.clientX - rect.left + container.scrollLeft
-    const dateAtMouse = xToDate(mouseX, viewStart, pixelsPerDay)
     const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pixelsPerDay * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
     setPixelsPerDay(newZoom)
-    requestAnimationFrame(() => {
-      if (!containerRef.current) return
-      containerRef.current.scrollLeft = dateToX(dateAtMouse, viewStart, newZoom) - (e.clientX - rect.left)
-    })
+    if (vertical) {
+      const mouseY = e.clientY - rect.top + container.scrollTop
+      const dateAtMouse = yToDate(mouseY, viewStart, pixelsPerDay)
+      requestAnimationFrame(() => {
+        if (!containerRef.current) return
+        containerRef.current.scrollTop = dateToY(dateAtMouse, viewStart, newZoom) - (e.clientY - rect.top)
+      })
+    } else {
+      const mouseX = e.clientX - rect.left + container.scrollLeft
+      const dateAtMouse = xToDate(mouseX, viewStart, pixelsPerDay)
+      requestAnimationFrame(() => {
+        if (!containerRef.current) return
+        containerRef.current.scrollLeft = dateToX(dateAtMouse, viewStart, newZoom) - (e.clientX - rect.left)
+      })
+    }
   }
 
   // ── Pan ───────────────────────────────────────────────────────────────────
 
-  const panRef = useRef<{ startX: number; scrollLeft: number } | null>(null)
+  const panRef = useRef<{ startX: number; startY: number; scrollLeft: number; scrollTop: number } | null>(null)
 
   function handleCanvasMouseDown(e: React.MouseEvent) {
     if (e.target !== e.currentTarget) return
     setSelectedTaskId(null)
     setSelectedRelId(null)
-    panRef.current = { startX: e.clientX, scrollLeft: containerRef.current?.scrollLeft ?? 0 }
+    panRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      scrollLeft: containerRef.current?.scrollLeft ?? 0,
+      scrollTop: containerRef.current?.scrollTop ?? 0,
+    }
     function onMove(me: MouseEvent) {
       if (!panRef.current || !containerRef.current) return
-      containerRef.current.scrollLeft = panRef.current.scrollLeft - (me.clientX - panRef.current.startX)
+      if (vertical) {
+        containerRef.current.scrollTop = panRef.current.scrollTop - (me.clientY - panRef.current.startY)
+      } else {
+        containerRef.current.scrollLeft = panRef.current.scrollLeft - (me.clientX - panRef.current.startX)
+      }
     }
     function onUp() {
       panRef.current = null
@@ -368,10 +451,19 @@ export function TaskGraph() {
       let tAnchor: AnchorType | null = null
       for (const [id, pos] of positionsRef.current) {
         if (id === sourceId) continue
-        if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + CARD_HEIGHT) {
-          target = id
-          tAnchor = x < pos.x + pos.width / 2 ? 'start' : 'end'
-          break
+        const cardH = pos.height ?? CARD_HEIGHT
+        if (vertical) {
+          if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + cardH) {
+            target = id
+            tAnchor = y < pos.y + cardH / 2 ? 'start' : 'end'
+            break
+          }
+        } else {
+          if (x >= pos.x && x <= pos.x + pos.width && y >= pos.y && y <= pos.y + CARD_HEIGHT) {
+            target = id
+            tAnchor = x < pos.x + pos.width / 2 ? 'start' : 'end'
+            break
+          }
         }
       }
       dragTargetRef.current = target
@@ -402,10 +494,14 @@ export function TaskGraph() {
     const tgtPos = positionsRef.current.get(targetId)
     if (!srcPos || !tgtPos) return
 
-    const srcAnchorX = sourceAnchor === 'start' ? srcPos.x : srcPos.x + srcPos.width
-    const tgtAnchorX = targetAnchor === 'start' ? tgtPos.x : tgtPos.x + tgtPos.width
+    const srcAnchorCoord = vertical
+      ? (sourceAnchor === 'start' ? srcPos.y : srcPos.y + (srcPos.height ?? CARD_HEIGHT))
+      : (sourceAnchor === 'start' ? srcPos.x : srcPos.x + srcPos.width)
+    const tgtAnchorCoord = vertical
+      ? (targetAnchor === 'start' ? tgtPos.y : tgtPos.y + (tgtPos.height ?? CARD_HEIGHT))
+      : (targetAnchor === 'start' ? tgtPos.x : tgtPos.x + tgtPos.width)
 
-    const resolved = resolveRelationship(sourceId, sourceAnchor, srcAnchorX, targetId, targetAnchor, tgtAnchorX)
+    const resolved = resolveRelationship(sourceId, sourceAnchor, srcAnchorCoord, targetId, targetAnchor, tgtAnchorCoord)
     if (!resolved) return
     const { predecessorId, taskId, relType } = resolved
 
@@ -420,11 +516,18 @@ export function TaskGraph() {
 
   useEffect(() => {
     if (!loading && containerRef.current) {
-      const todayX = dateToX(new Date(), viewStart, pixelsPerDay)
-      containerRef.current.scrollLeft = todayX - containerRef.current.clientWidth * 0.35
+      if (vertical) {
+        const todayY = dateToY(new Date(), viewStart, pixelsPerDay)
+        containerRef.current.scrollTop  = todayY - containerRef.current.clientHeight * 0.35
+        containerRef.current.scrollLeft = 0
+      } else {
+        const todayX = dateToX(new Date(), viewStart, pixelsPerDay)
+        containerRef.current.scrollLeft = todayX - containerRef.current.clientWidth * 0.35
+        containerRef.current.scrollTop  = 0
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading])
+  }, [loading, vertical])
 
   // ── Filters ───────────────────────────────────────────────────────────────
 
@@ -435,6 +538,19 @@ export function TaskGraph() {
   const activeFilterCount = Object.values(filters).filter(Boolean).length
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  const axisPos: 'top' | 'bottom' | 'left' | 'right' = vertical
+    ? (config?.timeAxisPosition === 'Right' ? 'right' : 'left')
+    : (config?.timeAxisPosition === 'Bottom' ? 'bottom' : 'top')
+
+  const timeAxisEl = (
+    <TimeAxis
+      key="time-axis"
+      viewStart={viewStart} viewEnd={viewEnd} pixelsPerDay={pixelsPerDay}
+      canvasSize={vertical ? canvasHeight : canvasWidth}
+      position={axisPos}
+    />
+  )
 
   if (loading) return <div className={styles.state}>Loading…</div>
   if (error)   return <div className={styles.stateError}>{error}</div>
@@ -504,13 +620,14 @@ export function TaskGraph() {
 
       <div ref={containerRef} className={styles.canvasContainer} onWheel={handleWheel}>
         <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
-          <TimeAxis viewStart={viewStart} viewEnd={viewEnd} pixelsPerDay={pixelsPerDay} canvasWidth={canvasWidth} position="top" />
+          {/* TimeAxis rendered first for top/left, last for bottom/right so sticky positioning works */}
+          {(axisPos === 'top' || axisPos === 'left') && timeAxisEl}
 
-          <div className={styles.weekBand} style={{ left: weekBand.x, width: weekBand.width }} aria-hidden="true" />
+          <div className={vertical ? styles.weekBandV : styles.weekBand} style={weekBand} aria-hidden="true" />
 
-          {gaps.map((g, i) => <div key={i} className={styles.gap} style={{ left: g.x, width: g.width }} aria-hidden="true" />)}
+          {gaps.map((g, i) => <div key={i} className={vertical ? styles.gapV : styles.gap} style={g} aria-hidden="true" />)}
 
-          <div className={styles.nowLine} style={{ left: nowX }} aria-label="Current time" />
+          <div className={vertical ? styles.nowLineV : styles.nowLine} style={nowLine} aria-label="Current time" />
 
           {filtered.map(task => {
             const pos = positions.get(task.id)
@@ -523,6 +640,7 @@ export function TaskGraph() {
                 x={pos.x}
                 y={pos.y}
                 width={pos.width}
+                height={vertical ? pos.height : undefined}
                 selected={selectedTaskId === task.id || relAnchorIds.has(task.id)}
                 isDragTarget={dragTargetId === task.id}
                 onSelect={id => { setSelectedTaskId(id); setSelectedRelId(null) }}
@@ -583,6 +701,8 @@ export function TaskGraph() {
                 markerEnd="url(#arrowhead-drag)" opacity="0.8" />
             )}
           </svg>
+
+          {(axisPos === 'bottom' || axisPos === 'right') && timeAxisEl}
         </div>
 
 
@@ -614,6 +734,7 @@ export function TaskGraph() {
         onClose={() => setSelectedTaskId(null)}
         onUpdated={load}
         onSelectTask={setSelectedTaskId}
+        autoSaveDelayMs={config ? config.autoSaveDelaySeconds * 1000 : 2000}
       />
     </div>
   )

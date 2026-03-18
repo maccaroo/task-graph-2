@@ -104,8 +104,50 @@ public class UserService(AppDbContext db, IWebHostEnvironment env) : IUserServic
         return ToResponse(user);
     }
 
+    public async Task<UserResponse> UpdateConfigurationAsync(Guid id, Guid requesterId, UpdateUserConfigurationRequest request)
+    {
+        if (id != requesterId)
+            throw new UnauthorizedException("You can only update your own configuration.");
+
+        var user = await db.Users.FindAsync(id)
+            ?? throw new NotFoundException($"User {id} not found.");
+
+        if (!Enum.TryParse<DefaultTasksView>(request.DefaultTasksView, out var defaultTasksView))
+            throw new ValidationException("Invalid DefaultTasksView value.");
+        if (!Enum.TryParse<TimeAxisDirection>(request.TimeAxisDirection, out var timeAxisDirection))
+            throw new ValidationException("Invalid TimeAxisDirection value.");
+        if (!Enum.TryParse<TimeAxisPosition>(request.TimeAxisPosition, out var timeAxisPosition))
+            throw new ValidationException("Invalid TimeAxisPosition value.");
+        if (request.AutoSaveDelaySeconds < 0 || request.AutoSaveDelaySeconds > 10)
+            throw new ValidationException("AutoSaveDelaySeconds must be between 0 and 10.");
+
+        if (timeAxisDirection == TimeAxisDirection.Horizontal &&
+            timeAxisPosition != TimeAxisPosition.Top && timeAxisPosition != TimeAxisPosition.Bottom)
+            throw new ValidationException("TimeAxisPosition must be Top or Bottom when direction is Horizontal.");
+        if (timeAxisDirection == TimeAxisDirection.Vertical &&
+            timeAxisPosition != TimeAxisPosition.Left && timeAxisPosition != TimeAxisPosition.Right)
+            throw new ValidationException("TimeAxisPosition must be Left or Right when direction is Vertical.");
+
+        // Assign a new instance so EF Core's change-detection snapshot picks up the mutation.
+        user.Configuration = new UserConfiguration
+        {
+            DefaultTasksView = defaultTasksView,
+            TimeAxisDirection = timeAxisDirection,
+            TimeAxisPosition = timeAxisPosition,
+            AutoSaveDelaySeconds = request.AutoSaveDelaySeconds,
+        };
+
+        await db.SaveChangesAsync();
+        return ToResponse(user);
+    }
+
     private static UserResponse ToResponse(Models.User u) =>
-        new(u.Id, u.Username, u.FirstName, u.LastName, u.Email, u.AvatarUrl);
+        new(u.Id, u.Username, u.FirstName, u.LastName, u.Email, u.AvatarUrl,
+            new UserConfigurationResponse(
+                u.Configuration.DefaultTasksView.ToString(),
+                u.Configuration.TimeAxisDirection.ToString(),
+                u.Configuration.TimeAxisPosition.ToString(),
+                u.Configuration.AutoSaveDelaySeconds));
 
     private static void ValidateEmail(string email)
     {

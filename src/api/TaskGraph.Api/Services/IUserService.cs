@@ -8,6 +8,7 @@ public interface IUserService
     Task<UserResponse> GetByIdAsync(Guid id);
     Task<UserResponse> UpdateAsync(Guid id, Guid requesterId, UpdateUserRequest request);
     Task<UserResponse> UpdateAvatarAsync(Guid id, Guid requesterId, Stream imageStream, string fileName, long fileSize, AvatarCrop? crop);
+    Task<UserResponse> UpdateConfigurationAsync(Guid id, Guid requesterId, UpdateUserConfigurationRequest request);
 }
 
 public record AvatarCrop(int X, int Y, int Width, int Height);

@@ -16,6 +16,7 @@
 }
 
 .bottom {
+  position: absolute;
   top: auto;
   bottom: 0;
   border-bottom: none;
@@ -90,6 +91,95 @@
 
 @media (prefers-color-scheme: dark) {
   .axis {
+    background: rgba(17, 17, 24, 0.85);
+  }
+}
+
+/* ── Vertical axis (left / right) ──────────────────────────────────────────── */
+
+.axisVertical {
+  position: sticky;
+  left: 0;
+  top: 0;
+  z-index: 10;
+  width: 72px;
+  background: rgba(var(--color-bg-rgb, 255, 255, 255), 0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-right: 1px solid var(--color-border);
+  pointer-events: none;
+  flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.axisVertical.right {
+  position: absolute;
+  left: auto;
+  right: 0;
+  border-right: none;
+  border-left: 1px solid var(--color-border);
+}
+
+.periodBandV {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  pointer-events: none;
+}
+
+.periodLabelV {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  font-size: var(--text-xs);
+  font-weight: var(--font-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-height: calc(100% - 8px);
+  user-select: none;
+  opacity: 0.75;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+}
+
+.tickV {
+  position: absolute;
+  left: 0;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  transform: translateY(-1px);
+}
+
+.lineV {
+  height: 1px;
+  width: 8px;
+  background: var(--color-border-strong);
+  opacity: 0.4;
+}
+
+.major .lineV {
+  width: 14px;
+  opacity: 0.8;
+}
+
+.labelV {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  padding-left: 2px;
+  padding-top: 4px;
+  user-select: none;
+}
+
+.major .labelV {
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+}
+
+@media (prefers-color-scheme: dark) {
+  .axisVertical {
     background: rgba(17, 17, 24, 0.85);
   }
 }

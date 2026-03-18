@@ -7,6 +7,21 @@ import * as usersSvc from '../../services/users'
 
 vi.mock('../../services/tasks')
 vi.mock('../../services/users')
+vi.mock('../../hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    user: {
+      id: 'user-1',
+      configuration: {
+        defaultTasksView: 'Graph',
+        timeAxisDirection: 'Horizontal',
+        timeAxisPosition: 'Top',
+        autoSaveDelaySeconds: 2,
+      },
+    },
+    loading: false,
+    refresh: vi.fn(),
+  }),
+}))
 
 const mockTasks: tasksSvc.Task[] = [
   {
