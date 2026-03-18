@@ -265,45 +265,49 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
               </div>
             </div>
 
-            <div className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Time axis direction</span>
-              <div className={styles.radioGroup}>
-                {(['Horizontal', 'Vertical'] as const).map(v => (
-                  <label key={v} className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="timeAxisDirection"
-                      value={v}
-                      checked={timeAxisDirection === v}
-                      onChange={() => handleDirectionChange(v)}
-                    />
-                    <span>{v}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
+            <div className={styles.subGroup}>
+              <span className={styles.subGroupTitle}>Time Axis</span>
 
-            <div className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Time axis position</span>
-              <div className={styles.radioGroup}>
-                {(['Top', 'Bottom', 'Left', 'Right'] as const).map(v => {
-                  const disabled =
-                    (timeAxisDirection === 'Horizontal' && (v === 'Left' || v === 'Right')) ||
-                    (timeAxisDirection === 'Vertical' && (v === 'Top' || v === 'Bottom'))
-                  return (
+              <div className={styles.fieldGroup}>
+                <span className={styles.fieldLabel}>Direction</span>
+                <div className={styles.radioGroup}>
+                  {(['Horizontal', 'Vertical'] as const).map(v => (
                     <label key={v} className={styles.radioLabel}>
                       <input
                         type="radio"
-                        name="timeAxisPosition"
+                        name="timeAxisDirection"
                         value={v}
-                        checked={timeAxisPosition === v}
-                        onChange={() => handlePositionChange(v)}
-                        disabled={disabled}
+                        checked={timeAxisDirection === v}
+                        onChange={() => handleDirectionChange(v)}
                       />
                       <span>{v}</span>
                     </label>
-                  )
-                })}
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <span className={styles.fieldLabel}>Position</span>
+                <div className={styles.radioGroup}>
+                  {(['Top', 'Bottom', 'Left', 'Right'] as const).map(v => {
+                    const disabled =
+                      (timeAxisDirection === 'Horizontal' && (v === 'Left' || v === 'Right')) ||
+                      (timeAxisDirection === 'Vertical' && (v === 'Top' || v === 'Bottom'))
+                    return (
+                      <label key={v} className={styles.radioLabel}>
+                        <input
+                          type="radio"
+                          name="timeAxisPosition"
+                          value={v}
+                          checked={timeAxisPosition === v}
+                          onChange={() => handlePositionChange(v)}
+                          disabled={disabled}
+                        />
+                        <span>{v}</span>
+                      </label>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 

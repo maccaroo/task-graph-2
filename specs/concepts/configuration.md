@@ -71,6 +71,11 @@ When direction is changed, position is automatically reset to a valid value for 
 
 ### Behavior Settings
 
+#### UI Grouping
+Time Axis Direction and Time Axis Position are visually grouped together under a "Time Axis" sub-section in the configuration UI, with a subtle border/background to make the grouping apparent.
+
+### Behavior Settings
+
 #### Auto-Save Delay
 
 **Type**: Integer (seconds)
