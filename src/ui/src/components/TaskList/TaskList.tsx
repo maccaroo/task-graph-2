@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui'
 import { getTasks, type Task, type TaskPriority, type TaskStatus } from '../../services/tasks'
 import { getUsers, type UserSummary } from '../../services/users'
 import { computeDueStatus, DUE_STATUS_COLOR_VAR, DUE_STATUS_LABEL, type DueStatusKey } from '../../utils/taskStatus'
-import { ROUTES } from '../../routeConstants'
 import { AddTaskModal } from './AddTaskModal'
+import { TaskDetailPanel } from '../TaskGraph/TaskDetailPanel'
 import styles from './TaskList.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -132,7 +131,6 @@ interface TaskListProps {
 }
 
 export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
-  const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -143,6 +141,7 @@ export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
   const [openEndedFirst, setOpenEndedFirst] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -265,12 +264,17 @@ export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
         <tr
           key={task.id}
           ref={el => { if (el) rowRefs.current.set(task.id, el); else rowRefs.current.delete(task.id) }}
-          className={`${styles.row}${highlightedTaskId === task.id ? ` ${styles.rowHighlighted}` : ''}`}
+          className={[
+            styles.row,
+            highlightedTaskId === task.id ? styles.rowHighlighted : '',
+            selectedTaskId === task.id ? styles.rowSelected : '',
+          ].filter(Boolean).join(' ')}
           style={{ '--status-color': color } as React.CSSProperties}
-          onClick={() => navigate(ROUTES.TASK(task.id))}
+          onClick={() => setSelectedTaskId(id => id === task.id ? null : task.id)}
           tabIndex={0}
-          onKeyDown={e => { if (e.key === 'Enter') navigate(ROUTES.TASK(task.id)) }}
+          onKeyDown={e => { if (e.key === 'Enter') setSelectedTaskId(id => id === task.id ? null : task.id) }}
           aria-label={task.title}
+          aria-selected={selectedTaskId === task.id}
         >
           <td className={styles.tdTitle}>{task.title}</td>
           <td className={styles.td}>
@@ -292,6 +296,8 @@ export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
 
     return rows
   }
+
+  const selectedTask = selectedTaskId ? (tasks.find(t => t.id === selectedTaskId) ?? null) : null
 
   // ── Render ─────────────────────────────────────────────────────────────
 
@@ -401,30 +407,45 @@ export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
         </div>
       )}
 
-      {/* Table */}
-      {loading ? (
-        <p className={styles.state}>Loading…</p>
-      ) : error ? (
-        <p className={styles.stateError}>{error}</p>
-      ) : (
-        <div className={styles.tableWrapper}>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <SortHeader col="title"     label="Title" />
-                <SortHeader col="priority"  label="Priority" />
-                <th className={styles.th}>Tags</th>
-                <SortHeader col="assignee"  label="Assignee" />
-                <SortHeader col="startDate" label="Start" />
-                <SortHeader col="endDate"   label="End" />
-                <SortHeader col="duration"  label="Duration" />
-                <SortHeader col="status"    label="Status" />
-              </tr>
-            </thead>
-            <tbody>{renderRows()}</tbody>
-          </table>
-        </div>
-      )}
+      {/* Table + Detail Panel */}
+      <div
+        className={styles.body}
+        onClick={e => { if (!(e.target as HTMLElement).closest('tr[aria-selected]')) setSelectedTaskId(null) }}
+      >
+        {loading ? (
+          <p className={styles.state}>Loading…</p>
+        ) : error ? (
+          <p className={styles.stateError}>{error}</p>
+        ) : (
+          <div className={styles.tableWrapper}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <SortHeader col="title"     label="Title" />
+                  <SortHeader col="priority"  label="Priority" />
+                  <th className={styles.th}>Tags</th>
+                  <SortHeader col="assignee"  label="Assignee" />
+                  <SortHeader col="startDate" label="Start" />
+                  <SortHeader col="endDate"   label="End" />
+                  <SortHeader col="duration"  label="Duration" />
+                  <SortHeader col="status"    label="Status" />
+                </tr>
+              </thead>
+              <tbody>{renderRows()}</tbody>
+            </table>
+          </div>
+        )}
+
+        <TaskDetailPanel
+          task={selectedTask}
+          tasks={tasks}
+          users={users}
+          onClose={() => setSelectedTaskId(null)}
+          onUpdated={load}
+          onDeleted={() => { setSelectedTaskId(null); void load() }}
+          onSelectTask={setSelectedTaskId}
+        />
+      </div>
 
       <AddTaskModal
         open={addOpen}

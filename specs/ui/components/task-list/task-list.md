@@ -11,3 +11,4 @@ It contains the following features:
 - Task list items are coloured according to their status (as in graph component)
 - The user may add a new task by clicking the `Add Task` button
 - A toggle controls whether open-ended tasks appear before or after dated tasks in the list
+- Clicking a task row opens the Task Detail side panel (same component as the graph view) on the right, allowing the user to view and edit task details without navigating away. Clicking the selected row again, clicking empty space in the list, or closing the panel deselects the task.
