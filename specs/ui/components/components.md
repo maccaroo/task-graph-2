@@ -68,4 +68,6 @@ Each notification shows:
 - Task title (hyperlink)
 - Timestamp
 
-Notifications are delivered in real-time via WebSocket.  Clicking a notification marks it as read (fulfilled) and navigates to the task.
+Notifications are delivered in real-time via WebSocket.  Clicking a notification marks it as read and selects the task in the currently active view (graph or list). If the user is not on the dashboard, they are navigated there first. In the graph view, selecting a task opens its Task Detail panel. In the list view, the task row is scrolled to and highlighted.
+
+A "Clear Read" button is shown when at least one read notification exists. Clicking it deletes all read notifications for the current user and removes them from the displayed list.

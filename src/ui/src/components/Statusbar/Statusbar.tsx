@@ -13,9 +13,10 @@ interface StatusbarProps {
   activeView?: TasksView
   onViewChange?: (view: TasksView) => void
   onHome?: () => void
+  onNotificationTaskSelect?: (taskId: string) => void
 }
 
-export function Statusbar({ onOpenProfile, activeView, onViewChange, onHome }: StatusbarProps) {
+export function Statusbar({ onOpenProfile, activeView, onViewChange, onHome, onNotificationTaskSelect }: StatusbarProps) {
   const navigate = useNavigate()
   const { logout } = useAuth()
   const { user, avatarVersion } = useCurrentUser()
@@ -119,8 +120,8 @@ export function Statusbar({ onOpenProfile, activeView, onViewChange, onHome }: S
           {notifOpen && (
             <NotificationList
               notifications={notifications}
-              onClose={() => setNotifOpen(false)}
               onNotificationsChange={setNotifications}
+              onTaskSelect={onNotificationTaskSelect}
             />
           )}
         </div>

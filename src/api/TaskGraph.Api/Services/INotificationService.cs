@@ -7,5 +7,6 @@ public interface INotificationService
 {
     Task<IEnumerable<NotificationResponse>> GetAllForUserAsync(Guid userId);
     Task<NotificationResponse> MarkAsReadAsync(Guid id, Guid requesterId);
+    Task DeleteReadAsync(Guid userId);
     Task CreateAsync(Guid userId, NotificationType type, Guid? taskId, string message);
 }

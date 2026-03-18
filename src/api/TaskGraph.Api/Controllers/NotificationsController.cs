@@ -17,6 +17,13 @@ public class NotificationsController(INotificationService notificationService) :
         return Ok(notifications);
     }
 
+    [HttpDelete("read")]
+    public async Task<IActionResult> DeleteRead()
+    {
+        await notificationService.DeleteReadAsync(GetRequesterId());
+        return NoContent();
+    }
+
     [HttpPut("{id:guid}/read")]
     public async Task<IActionResult> MarkAsRead(Guid id)
     {

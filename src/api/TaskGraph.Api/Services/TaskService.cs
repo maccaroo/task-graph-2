@@ -85,6 +85,14 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
 
         db.Tasks.Add(task);
         await db.SaveChangesAsync();
+
+        if (task.AssigneeId.HasValue)
+            await notificationService.CreateAsync(
+                task.AssigneeId.Value,
+                NotificationType.AssignmentAlert,
+                task.Id,
+                $"You have been assigned to \"{task.Title}\".");
+
         return ToResponse(await LoadTaskAsync(task.Id));
     }
 

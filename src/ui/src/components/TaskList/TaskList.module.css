@@ -197,6 +197,7 @@
 
 .row:hover { background-color: var(--color-surface); }
 .row:focus-visible { outline: 2px solid var(--color-primary); outline-offset: -2px; }
+.rowHighlighted { background-color: var(--color-primary-subtle) !important; transition: background-color 2s ease-out; }
 
 .td {
   padding: var(--space-2) var(--space-3);

@@ -147,6 +147,13 @@
 ## P19 - Delete Task UI
 [x] T1 - Add delete button to Task Detail panel with inline confirmation
 
+## P19b - Notification Task Selection
+[x] T1 - Clicking a notification selects the task in the active view (graph: opens detail panel; list: scrolls to and highlights row), navigating to the dashboard first if needed
+
+## P19c - Clear Read Notifications
+[x] T1 - Add DELETE /notifications/read API endpoint to delete all read notifications for the current user
+[x] T2 - Add "Clear Read" button to notification list popup (visible only when read notifications exist)
+
 ## P20 - Documentation Views
 [x] T1 - Build About view (application description, developer info)
 [x] T2 - Build FAQ view

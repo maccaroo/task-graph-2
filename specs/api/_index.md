@@ -44,6 +44,7 @@ REST API with JWT authentication.  All endpoints require a valid Bearer token un
 |--------|------|-------------|
 | GET | /notifications | List notifications for current user |
 | PUT | /notifications/{id}/read | Mark notification as read |
+| DELETE | /notifications/read | Delete all read notifications for current user |
 
 ## WebSocket
 

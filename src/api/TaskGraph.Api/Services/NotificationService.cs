@@ -34,6 +34,13 @@ public class NotificationService(AppDbContext db, IWebSocketConnectionManager co
         return ToResponse(notification);
     }
 
+    public async Task DeleteReadAsync(Guid userId)
+    {
+        await db.Notifications
+            .Where(n => n.UserId == userId && n.IsRead)
+            .ExecuteDeleteAsync();
+    }
+
     public async Task CreateAsync(Guid userId, NotificationType type, Guid? taskId, string message)
     {
         var notification = new Notification

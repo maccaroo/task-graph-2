@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button } from '../ui'
 import { getTasks, type Task, type TaskPriority, type TaskStatus } from '../../services/tasks'
@@ -126,7 +126,12 @@ function splitByEndDate(tasks: Task[]): { dated: Task[]; openEnded: Task[] } {
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function TaskList() {
+interface TaskListProps {
+  selectTaskId?: string | null
+  onTaskSelected?: () => void
+}
+
+export function TaskList({ selectTaskId, onTaskSelected }: TaskListProps) {
   const navigate = useNavigate()
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
@@ -137,6 +142,22 @@ export function TaskList() {
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [openEndedFirst, setOpenEndedFirst] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null)
+  const rowRefs = useRef<Map<string, HTMLTableRowElement>>(new Map())
+  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Scroll to and highlight task when triggered externally (e.g. notification click)
+  useEffect(() => {
+    if (!selectTaskId) return
+    onTaskSelected?.()
+    setHighlightedTaskId(selectTaskId)
+    // Scroll after a tick to allow render
+    setTimeout(() => {
+      rowRefs.current.get(selectTaskId)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }, 0)
+    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
+    highlightTimerRef.current = setTimeout(() => setHighlightedTaskId(null), 2000)
+  }, [selectTaskId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const load = useCallback(async () => {
     setError('')
@@ -243,7 +264,8 @@ export function TaskList() {
       rows.push(
         <tr
           key={task.id}
-          className={styles.row}
+          ref={el => { if (el) rowRefs.current.set(task.id, el); else rowRefs.current.delete(task.id) }}
+          className={`${styles.row}${highlightedTaskId === task.id ? ` ${styles.rowHighlighted}` : ''}`}
           style={{ '--status-color': color } as React.CSSProperties}
           onClick={() => navigate(ROUTES.TASK(task.id))}
           tabIndex={0}

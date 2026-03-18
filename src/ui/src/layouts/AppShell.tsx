@@ -12,6 +12,8 @@ export type TasksView = 'graph' | 'list'
 export interface AppShellOutletContext {
   activeView: TasksView
   setActiveView: (view: TasksView) => void
+  selectTaskId: string | null
+  clearSelectTaskId: () => void
 }
 
 export function AppShell() {
@@ -26,6 +28,7 @@ function AppShellContent() {
   const { user } = useCurrentUser()
   const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
+  const [selectTaskId, setSelectTaskId] = useState<string | null>(null)
   // null = user hasn't manually changed the view; fall back to their saved default
   const [viewOverride, setViewOverride] = useState<TasksView | null>(null)
 
@@ -41,6 +44,11 @@ function AppShellContent() {
   }, [user])
   const activeView: TasksView = viewOverride ?? sessionDefault ?? 'graph'
 
+  function handleNotificationTaskSelect(taskId: string) {
+    setSelectTaskId(taskId)
+    navigate(ROUTES.DASHBOARD)
+  }
+
   return (
     <div className={styles.shell}>
       <Statusbar
@@ -48,9 +56,15 @@ function AppShellContent() {
         activeView={activeView}
         onViewChange={(view) => { setViewOverride(view); navigate(ROUTES.DASHBOARD) }}
         onHome={() => setViewOverride(null)}
+        onNotificationTaskSelect={handleNotificationTaskSelect}
       />
       <main className={styles.main}>
-        <Outlet context={{ activeView, setActiveView: setViewOverride } satisfies AppShellOutletContext} />
+        <Outlet context={{
+          activeView,
+          setActiveView: setViewOverride,
+          selectTaskId,
+          clearSelectTaskId: () => setSelectTaskId(null),
+        } satisfies AppShellOutletContext} />
       </main>
       <UserProfileModal open={profileOpen} onClose={() => setProfileOpen(false)} />
     </div>

@@ -112,7 +112,12 @@ function wouldCreateCycle(taskMap: Map<string, Task>, newPredId: string, taskId:
 
 // ── Component ──────────────────────────────────────────────────────────────
 
-export function TaskGraph() {
+interface TaskGraphProps {
+  selectTaskId?: string | null
+  onTaskSelected?: () => void
+}
+
+export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   const { user } = useCurrentUser()
   const config = user?.configuration
   const vertical = config?.timeAxisDirection === 'Vertical'
@@ -130,6 +135,14 @@ export function TaskGraph() {
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [selectedRelId, setSelectedRelId] = useState<string | null>(null)
   const [addOpen, setAddOpen] = useState(false)
+
+  // Select a task when triggered externally (e.g. notification click)
+  useEffect(() => {
+    if (!selectTaskId) return
+    setSelectedTaskId(selectTaskId)
+    setSelectedRelId(null)
+    onTaskSelected?.()
+  }, [selectTaskId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [relationDrag, setRelationDrag] = useState<RelationDrag | null>(null)
   const [dragTargetId, setDragTargetId] = useState<string | null>(null)

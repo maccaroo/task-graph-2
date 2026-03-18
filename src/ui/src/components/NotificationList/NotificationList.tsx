@@ -1,20 +1,26 @@
-import { useNavigate } from 'react-router-dom'
-import { type Notification, markNotificationRead } from '../../services/notifications'
-import { ROUTES } from '../../routeConstants'
+import { type Notification, clearReadNotifications, markNotificationRead } from '../../services/notifications'
 import styles from './NotificationList.module.css'
 
 interface NotificationListProps {
   notifications: Notification[]
-  onClose: () => void
   onNotificationsChange: (notifications: Notification[]) => void
+  onTaskSelect?: (taskId: string) => void
 }
 
-export function NotificationList({ notifications, onClose, onNotificationsChange }: NotificationListProps) {
-  const navigate = useNavigate()
+export function NotificationList({ notifications, onNotificationsChange, onTaskSelect }: NotificationListProps) {
+  const hasRead = notifications.some(n => n.isRead)
+
+  async function handleClearRead() {
+    const remaining = notifications.filter(n => !n.isRead)
+    onNotificationsChange(remaining)
+    try {
+      await clearReadNotifications()
+    } catch {
+      onNotificationsChange(notifications) // revert on failure
+    }
+  }
 
   async function handleClick(n: Notification) {
-    onClose()
-
     // Optimistic mark-as-read
     if (!n.isRead) {
       const updated = notifications.map(x => x.id === n.id ? { ...x, isRead: true } : x)
@@ -26,13 +32,18 @@ export function NotificationList({ notifications, onClose, onNotificationsChange
       }
     }
 
-    if (n.taskId) navigate(ROUTES.TASK(n.taskId))
+    if (n.taskId) onTaskSelect?.(n.taskId)
   }
 
   return (
     <div className={styles.panel} role="dialog" aria-label="Notifications">
       <div className={styles.header}>
         <span className={styles.title}>Notifications</span>
+        {hasRead && (
+          <button className={styles.clearBtn} onClick={handleClearRead}>
+            Clear read
+          </button>
+        )}
       </div>
 
       {notifications.length === 0 ? (
