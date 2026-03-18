@@ -733,6 +733,7 @@ export function TaskGraph() {
         users={users}
         onClose={() => setSelectedTaskId(null)}
         onUpdated={load}
+        onDeleted={() => { setSelectedTaskId(null); void load() }}
         onSelectTask={setSelectedTaskId}
         autoSaveDelayMs={config ? config.autoSaveDelaySeconds * 1000 : 2000}
       />

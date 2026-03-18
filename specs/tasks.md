@@ -144,12 +144,15 @@
 ## P18 - User Management View
 [x] T1 - Build User Management view (list users with task count summary by status)
 
-## P19 - Documentation Views
-[ ] T1 - Build About view (application description, developer info)
-[ ] T2 - Build FAQ view
-[ ] T3 - Build User Guide view (step-by-step instructions with screenshots)
+## P19 - Delete Task UI
+[x] T1 - Add delete button to Task Detail panel with inline confirmation
 
-## P20 - End-to-End Testing
+## P20 - Documentation Views
+[x] T1 - Build About view (application description, developer info)
+[x] T2 - Build FAQ view
+[x] T3 - Build User Guide view (step-by-step instructions with screenshots)
+
+## P21 - End-to-End Testing
 [ ] T1 - E2E: user registration and login flow
 [ ] T2 - E2E: create, edit, and delete a task
 [ ] T3 - E2E: add and remove task dependencies with constraint validation

@@ -54,6 +54,7 @@ function renderPanel(task: tasksSvc.Task | null, props?: Partial<React.Component
     users: mockUsers,
     onClose: vi.fn(),
     onUpdated: vi.fn(),
+    onDeleted: vi.fn(),
     onSelectTask: vi.fn(),
     autoSaveDelayMs: 50,
   }
@@ -205,6 +206,7 @@ describe('TaskDetailPanel', () => {
           users={mockUsers}
           onClose={vi.fn()}
           onUpdated={vi.fn()}
+          onDeleted={vi.fn()}
           onSelectTask={vi.fn()}
           autoSaveDelayMs={50}
         />

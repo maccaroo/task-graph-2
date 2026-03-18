@@ -66,5 +66,8 @@ I.e., submitting an annual tax return is a task with a flexible start time (you 
 A task's duration is the amount of time it is expected to take to complete. This is locked if both start and end times are fixed.  Otherwise,  if the timing is flexible, it can be manually entered by the user, or automatically calculated based on the task's dependencies.  This is useful for tasks which are expected to take a certain amount of time, but which may not have a fixed start or end date.
 
 
+## Delete Task
+A "Delete" button is shown at the bottom of the panel. Clicking it prompts an inline confirmation ("Are you sure?") with Confirm and Cancel options. On confirm, calls `DELETE /tasks/{id}`, closes the panel, and removes the task from the view.
+
 ## Relationships
 The task's relationships describe how the task is related to other tasks.  Tasks which must be completed before the selected task may proceed are called predecessors, and tasks which are unblocked once the select task completes are called successors.  These relationships are used to determine the task's position in the graph, and to provide context for the task.  They are also used to determine the task's timing, as a task cannot start until all of its predecessors are complete, and must end before any of its successors can start.

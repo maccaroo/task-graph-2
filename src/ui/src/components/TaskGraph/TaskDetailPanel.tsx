@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   addPredecessor,
+  deleteTask,
   removePredecessor,
   updateTask,
   type Task,
@@ -16,6 +17,7 @@ interface TaskDetailPanelProps {
   users: UserSummary[]
   onClose: () => void
   onUpdated: () => void
+  onDeleted: (id: string) => void
   onSelectTask: (id: string) => void
   autoSaveDelayMs?: number
 }
@@ -30,6 +32,7 @@ export function TaskDetailPanel({
   users,
   onClose,
   onUpdated,
+  onDeleted,
   onSelectTask,
   autoSaveDelayMs = 2000,
 }: TaskDetailPanelProps) {
@@ -47,6 +50,8 @@ export function TaskDetailPanel({
   const [saveError, setSaveError] = useState('')
   const [addPredId, setAddPredId] = useState('')
   const [relError, setRelError] = useState('')
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteError, setDeleteError] = useState('')
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Keep a stable ref to the current task id for use inside async callbacks
@@ -69,6 +74,8 @@ export function TaskDetailPanel({
     setSaveError('')
     setRelError('')
     setAddPredId('')
+    setConfirmDelete(false)
+    setDeleteError('')
   }, [task?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save debounce — fires whenever any field or dirty flag changes
@@ -119,6 +126,18 @@ export function TaskDetailPanel({
       onUpdated()
     } catch (err) {
       setRelError(err instanceof Error ? err.message : 'Failed to remove predecessor.')
+    }
+  }
+
+  async function handleDelete() {
+    if (!task) return
+    setDeleteError('')
+    try {
+      await deleteTask(task.id)
+      onDeleted(task.id)
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : 'Failed to delete task.')
+      setConfirmDelete(false)
     }
   }
 
@@ -345,15 +364,31 @@ export function TaskDetailPanel({
 
         {relError && <p className={styles.error} role="alert">{relError}</p>}
         {saveError && <p className={styles.error} role="alert">{saveError}</p>}
+        {deleteError && <p className={styles.error} role="alert">{deleteError}</p>}
       </div>
 
       <div className={styles.footer}>
-        {saving
-          ? <span className={styles.statusSaving}>Saving…</span>
-          : dirty
-            ? <span className={styles.statusUnsaved}>Unsaved changes</span>
-            : <span className={styles.statusSaved}>Saved</span>
-        }
+        <div className={styles.footerLeft}>
+          {!confirmDelete ? (
+            <button className={styles.deleteBtn} onClick={() => setConfirmDelete(true)}>
+              Delete
+            </button>
+          ) : (
+            <div className={styles.deleteConfirm}>
+              <span className={styles.deleteConfirmLabel}>Are you sure?</span>
+              <button className={styles.deleteConfirmBtn} onClick={handleDelete}>Yes</button>
+              <button className={styles.deleteCancelBtn} onClick={() => setConfirmDelete(false)}>No</button>
+            </div>
+          )}
+        </div>
+        <div className={styles.footerRight}>
+          {saving
+            ? <span className={styles.statusSaving}>Saving…</span>
+            : dirty
+              ? <span className={styles.statusUnsaved}>Unsaved changes</span>
+              : <span className={styles.statusSaved}>Saved</span>
+          }
+        </div>
       </div>
     </div>
   )

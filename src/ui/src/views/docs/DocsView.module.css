@@ -1,0 +1,257 @@
+/* ── Shell ────────────────────────────────────────────────────────────────── */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.heading {
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+/* ── Shared content area ──────────────────────────────────────────────────── */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-8);
+  max-width: 720px;
+}
+
+/* ── Sections ─────────────────────────────────────────────────────────────── */
+
+.section {
+  margin-bottom: var(--space-10);
+}
+
+.sectionTitle {
+  font-size: var(--text-xl);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-4);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.body {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 var(--space-4);
+}
+
+/* ── Feature list (About) ─────────────────────────────────────────────────── */
+
+.featureList {
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.8;
+}
+
+/* ── Definition list (About) ─────────────────────────────────────────────── */
+
+.dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-6);
+  font-size: var(--text-sm);
+  margin: 0 0 var(--space-4);
+}
+
+.dl dt {
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.dl dd {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+/* ── Link ─────────────────────────────────────────────────────────────────── */
+
+.link {
+  font-size: var(--text-sm);
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* ── Accordion (FAQ) ──────────────────────────────────────────────────────── */
+
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.accordionItem {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.accordionItemOpen {
+  border-color: var(--color-primary);
+}
+
+.accordionTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  font-size: var(--text-sm);
+  font-weight: var(--font-medium);
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: var(--space-3);
+  transition: background-color var(--transition-fast);
+}
+
+.accordionTrigger:hover {
+  background-color: var(--color-border);
+}
+
+.accordionTrigger:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
+}
+
+.accordionBody {
+  padding: 0 var(--space-4) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+  transition: transform var(--transition-fast);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Guide layout ─────────────────────────────────────────────────────────── */
+
+.guideLayout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.guideSidebar {
+  width: 200px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  padding: var(--space-5) var(--space-3);
+}
+
+.sidebarList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sidebarLink {
+  display: block;
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast), color var(--transition-fast);
+}
+
+.sidebarLink:hover {
+  background-color: var(--color-border);
+  color: var(--color-text);
+}
+
+.sidebarLink:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.guideContent {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-6) var(--space-8);
+  max-width: 720px;
+}
+
+/* ── Guide subsections ────────────────────────────────────────────────────── */
+
+.subsection {
+  margin-bottom: var(--space-6);
+}
+
+.subsectionTitle {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+  margin: 0 0 var(--space-3);
+}
+
+.stepList {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stepItem {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Screenshot placeholder ───────────────────────────────────────────────── */
+
+.screenshotPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 120px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  background-color: var(--color-surface);
+  font-style: italic;
+}

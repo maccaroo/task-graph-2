@@ -1,2 +1,43 @@
-# User Guide
-A guide to using the application, including how to use the various features and components.  This is intended for end users of the application, and should be written in a clear and concise manner, with step-by-step instructions and screenshots where appropriate.
+# User Guide View
+
+A step-by-step guide to using the application, intended for end users.
+
+## Route
+`/docs/guide`
+
+## Layout
+Rendered inside AppShell. Left sidebar with section links; content area on the right.
+Clicking a sidebar link scrolls to the corresponding section.
+
+## Sections
+
+### Getting Started
+- Logging in / registering
+- Navigating the app
+
+### Managing Tasks
+- Creating a task (title, dates, assignee, priority, tags)
+- Editing task details via the Task Detail panel
+- Deleting a task
+- Understanding task status colours
+
+### Graph View
+- Reading the timeline
+- Panning and zooming
+- Pinning / repositioning tasks
+
+### Dependencies
+- Adding a predecessor or successor
+- Relationship types explained
+- Constraint validation
+
+### Notifications
+- What triggers a notification
+- Viewing and dismissing notifications
+
+### User Profile & Settings
+- Updating profile info and avatar
+- Configuring default view, time axis, auto-save delay
+
+## Note on Screenshots
+Placeholder image slots are shown with the label "Screenshot coming soon" for each step that would normally include a screenshot.

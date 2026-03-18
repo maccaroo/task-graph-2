@@ -66,3 +66,7 @@ export async function addPredecessor(taskId: string, predecessorId: string, rela
 export async function removePredecessor(taskId: string, predecessorId: string): Promise<void> {
   await api.delete(`/tasks/${taskId}/predecessors/${predecessorId}`)
 }
+
+export async function deleteTask(id: string): Promise<void> {
+  await api.delete(`/tasks/${id}`)
+}
