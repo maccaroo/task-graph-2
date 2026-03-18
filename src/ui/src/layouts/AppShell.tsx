@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
+import { ROUTES } from '../routeConstants'
 import { Statusbar } from '../components/Statusbar/Statusbar'
 import { UserProfileModal } from '../components/UserProfileModal/UserProfileModal'
 import { CurrentUserProvider } from '../contexts/CurrentUserContext'
@@ -23,6 +24,7 @@ export function AppShell() {
 
 function AppShellContent() {
   const { user } = useCurrentUser()
+  const navigate = useNavigate()
   const [profileOpen, setProfileOpen] = useState(false)
   // null = user hasn't manually changed the view; fall back to their saved default
   const [viewOverride, setViewOverride] = useState<TasksView | null>(null)
@@ -44,7 +46,7 @@ function AppShellContent() {
       <Statusbar
         onOpenProfile={() => setProfileOpen(true)}
         activeView={activeView}
-        onViewChange={setViewOverride}
+        onViewChange={(view) => { setViewOverride(view); navigate(ROUTES.DASHBOARD) }}
         onHome={() => setViewOverride(null)}
       />
       <main className={styles.main}>

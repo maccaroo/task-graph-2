@@ -8,7 +8,7 @@ import { type UserSummary } from '../../services/users'
 vi.mock('../../services/tasks')
 
 const mockUsers: UserSummary[] = [
-  { id: 'user-1', username: 'alice', firstName: 'Alice', lastName: 'Smith', avatarUrl: null, completeTasks: 0, incompleteTasks: 1 },
+  { id: 'user-1', username: 'alice', firstName: 'Alice', lastName: 'Smith', avatarUrl: null, taskCounts: { total: 1, complete: 0, incomplete: 1 } },
 ]
 
 const baseTask: tasksSvc.Task = {

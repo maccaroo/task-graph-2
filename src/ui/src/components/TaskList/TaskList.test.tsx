@@ -11,7 +11,7 @@ vi.mock('../../services/tasks')
 vi.mock('../../services/users')
 
 const mockUsers: UserSummary[] = [
-  { id: 'u1', username: 'alice', firstName: 'Alice', lastName: 'A', avatarUrl: null, completeTasks: 0, incompleteTasks: 1 },
+  { id: 'u1', username: 'alice', firstName: 'Alice', lastName: 'A', avatarUrl: null, taskCounts: { total: 1, complete: 0, incomplete: 1 } },
 ]
 
 function makeTask(overrides: Partial<Task> = {}): Task {

@@ -142,7 +142,7 @@
 [x] T5 - Fix: changing timeAxisPosition must update the current graph view
 
 ## P18 - User Management View
-[ ] T1 - Build User Management view (list users with task count summary by status)
+[x] T1 - Build User Management view (list users with task count summary by status)
 
 ## P19 - Documentation Views
 [ ] T1 - Build About view (application description, developer info)

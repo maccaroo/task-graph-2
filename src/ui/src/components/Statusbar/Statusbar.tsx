@@ -85,6 +85,12 @@ export function Statusbar({ onOpenProfile, activeView, onViewChange, onHome }: S
           >
             Graph
           </button>
+          <NavLink
+            to={ROUTES.USERS}
+            className={({ isActive }) => `${styles.navLink}${isActive ? ` ${styles.navLinkActive}` : ''}`}
+          >
+            Users
+          </NavLink>
         </nav>
       </div>
 

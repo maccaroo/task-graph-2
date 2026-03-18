@@ -7,4 +7,5 @@ export const ROUTES = {
   TASKS: '/tasks',
   TASK: (id: string) => `/tasks/${id}`,
   TASK_GRAPH: '/graph',
+  USERS: '/users',
 } as const

@@ -8,6 +8,7 @@ import { PasswordResetRequestView } from './views/auth/PasswordResetRequestView'
 import { PasswordResetView } from './views/auth/PasswordResetView'
 import { RegisterView } from './views/auth/RegisterView'
 import { DashboardView } from './views/DashboardView'
+import { UserManagementView } from './views/users/UserManagementView'
 
 export const router = createBrowserRouter([
   // Public routes
@@ -24,6 +25,7 @@ export const router = createBrowserRouter([
         element: <AppShell />,
         children: [
           { path: ROUTES.DASHBOARD,   element: <DashboardView /> },
+          { path: ROUTES.USERS,       element: <UserManagementView /> },
           { path: ROUTES.TASK(':id'), element: <Placeholder name="Task Detail" /> },
         ],
       },
