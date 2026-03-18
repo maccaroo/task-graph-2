@@ -175,6 +175,20 @@
   z-index: 0;
 }
 
+/* ── Ghost card (shown while moving a task) ───────── */
+
+.ghostCard {
+  position: absolute;
+  background: var(--color-primary);
+  opacity: 0.18;
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-primary);
+  pointer-events: none;
+  height: 52px; /* CARD_HEIGHT */
+  z-index: 15;
+  box-sizing: border-box;
+}
+
 /* ── SVG arrows ───────────────────────────────────── */
 
 .arrowsSvg {

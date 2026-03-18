@@ -119,6 +119,12 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         task.EndDate = ToUtc(request.EndDate);
         task.Duration = request.Duration;
 
+        // Validate all existing relationship constraints against the new dates
+        foreach (var rel in task.Predecessors)
+            ValidateRelationshipConstraint(rel.Predecessor, task, rel.RelationshipType);
+        foreach (var rel in task.Successors)
+            ValidateRelationshipConstraint(task, rel.Task, rel.RelationshipType);
+
         await db.SaveChangesAsync();
 
         if (task.AssigneeId.HasValue && task.AssigneeId != oldAssigneeId)
@@ -218,8 +224,8 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
     private async Task<TaskItem> LoadTaskAsync(Guid id) =>
         await db.Tasks
             .Include(t => t.Assignee)
-            .Include(t => t.Predecessors)
-            .Include(t => t.Successors)
+            .Include(t => t.Predecessors).ThenInclude(r => r.Predecessor)
+            .Include(t => t.Successors).ThenInclude(r => r.Task)
             .FirstOrDefaultAsync(t => t.Id == id)
         ?? throw new NotFoundException($"Task {id} not found.");
 

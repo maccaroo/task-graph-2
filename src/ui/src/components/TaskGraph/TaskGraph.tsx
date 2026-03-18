@@ -3,6 +3,7 @@ import {
   addPredecessor,
   getTasks,
   removePredecessor,
+  updateTask,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -35,6 +36,8 @@ import {
   type TaskPosition,
 } from './graphLayout'
 import { resolveRelationship } from './TaskGraph.utils'
+import { snapDate } from './dragSnap'
+import { computeMovementCorridor, clampMoveDelta, clampResizePx, computeCascadeUpdates, type CascadeUpdate } from './dragConstraints'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
 import styles from './TaskGraph.module.css'
 
@@ -59,6 +62,7 @@ const DEFAULT_FILTERS: Filters = {
 const MIN_ZOOM = 0.3
 const MAX_ZOOM = 200
 const DEFAULT_ZOOM = 40
+const DRAG_THRESHOLD_PX = 4
 
 interface RelationDrag {
   sourceId: string
@@ -66,6 +70,31 @@ interface RelationDrag {
   cursorX: number
   cursorY: number
   targetAnchor: AnchorType | null
+}
+
+interface MoveDrag {
+  taskId: string
+  /** Original pixel position of the card's leading edge (left in H-mode, top in V-mode). */
+  originalPosPx: number
+  /** Card size in the drag axis: width (H-mode) or height (V-mode). */
+  cardSizePx: number
+  /** Current clamped+snapped delta from originalPosPx. */
+  deltaPx: number
+  corridor: { lowerPx: number; upperPx: number }
+  /** True when the task's anchor is its endDate (no startDate). */
+  endAnchored: boolean
+  /** Free anchor positions to cascade to related tasks during and after this drag. */
+  cascadeUpdates: Map<string, CascadeUpdate>
+}
+
+interface ResizeDrag {
+  taskId: string
+  anchor: 'start' | 'end'
+  /** Current clamped+snapped position of the dragged edge (absolute canvas coords). */
+  currentPx: number
+  corridor: { lowerPx: number; upperPx: number }
+  /** Free anchor positions to cascade to related tasks during and after this drag. */
+  cascadeUpdates: Map<string, CascadeUpdate>
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -148,8 +177,23 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   const [dragTargetId, setDragTargetId] = useState<string | null>(null)
   const dragTargetRef = useRef<string | null>(null)
 
+  // ── Move / resize drag state ──────────────────────────────────────────────
+
+  const [moveDrag, setMoveDrag] = useState<MoveDrag | null>(null)
+  const [resizeDrag, setResizeDrag] = useState<ResizeDrag | null>(null)
+  // Refs track the latest drag values for use in async mouseup handlers
+  const moveDeltaRef   = useRef<number>(0)
+  const resizePxRef    = useRef<number>(0)
+
   const positionsRef = useRef<Map<string, TaskPosition>>(new Map())
   const tasksRef = useRef<Task[]>([])
+  // Refs for zoom/layout values needed inside drag closures
+  const pixelsPerDayRef = useRef(pixelsPerDay)
+  const viewStartRef    = useRef<Date>(new Date())
+  const verticalRef     = useRef(vertical)
+
+  useEffect(() => { pixelsPerDayRef.current = pixelsPerDay }, [pixelsPerDay])
+  useEffect(() => { verticalRef.current = vertical }, [vertical])
 
   const load = useCallback(async () => {
     setError('')
@@ -168,8 +212,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   useEffect(() => { load() }, [load])
 
   // Track container width so the canvas always fills the visible area when zoomed out.
-  // Depends on `loading` because the canvasContainer isn't rendered until loading is false,
-  // so containerRef.current is null on the very first effect run.
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -182,7 +224,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
   const filtered = useMemo(() => {
     const f = applyFilters(tasks, filters)
-    // Hide tasks with no timing constraints on either end (truly open-ended)
     return showOpenEnded ? f : f.filter(t => t.startDate || t.endDate)
   }, [tasks, filters, showOpenEnded])
 
@@ -193,8 +234,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     [filtered, tasks],
   )
 
-  // Extend the view range symmetrically so the canvas always fills the full container
-  // width when zoomed out (horizontal mode only).
   const { viewStart, viewEnd } = useMemo(() => {
     if (!containerWidth || vertical) return { viewStart: rawViewStart, viewEnd: rawViewEnd }
     const rawSpanPx = ((rawViewEnd.getTime() - rawViewStart.getTime()) / MS_PER_DAY) * pixelsPerDay
@@ -207,6 +246,9 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
       viewEnd:   new Date(rawViewEnd.getTime()   + extraMs),
     }
   }, [rawViewStart, rawViewEnd, containerWidth, pixelsPerDay, vertical])
+
+  // Keep viewStartRef current for drag handlers
+  useEffect(() => { viewStartRef.current = viewStart }, [viewStart])
 
   const autoPositions = useMemo(
     () => vertical
@@ -226,8 +268,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     return Math.floor((Math.max(...ys) - CANVAS_PAD_Y) / ROW_HEIGHT) + 1
   }, [autoPositions, vertical])
 
-  // In vertical mode, expand columns to fill the available container width instead of
-  // using a fixed COL_WIDTH. containerWidth is tracked via ResizeObserver.
   const effectiveColWidth = useMemo(() => {
     if (!vertical || !containerWidth) return COL_WIDTH
     return Math.max(COL_WIDTH, Math.floor((containerWidth - AXIS_SIZE) / Math.max(numRows, 1)))
@@ -241,7 +281,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     return computeCanvasSize(viewStart, viewEnd, pixelsPerDay, numRows)
   }, [viewStart, viewEnd, pixelsPerDay, numRows, vertical, effectiveColWidth])
 
-  // In vertical mode, remap card x-positions and widths to use effectiveColWidth.
   const positions = useMemo(() => {
     if (!vertical || effectiveColWidth === COL_WIDTH) return autoPositions
     const result = new Map<string, TaskPosition>()
@@ -250,7 +289,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
       result.set(id, {
         ...pos,
         x: AXIS_SIZE + colIndex * effectiveColWidth,
-        // Keep the same right-margin as the default layout (COL_WIDTH - CARD_WIDTH = 20px)
         width: effectiveColWidth - (COL_WIDTH - CARD_WIDTH),
       })
     }
@@ -259,7 +297,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
   useEffect(() => { positionsRef.current = positions }, [positions])
 
-  // nowLine: vertical strip in horizontal mode; horizontal strip in vertical mode
   const nowLine = useMemo((): CSSProperties => vertical
     ? { top: dateToY(new Date(), viewStart, pixelsPerDay) }
     : { left: dateToX(new Date(), viewStart, pixelsPerDay) },
@@ -308,7 +345,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
         let midY: number
 
         if (vertical) {
-          // Vertical mode: time on Y axis, lanes on X axis
           const fromY = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
             ? fromPos.y + (fromPos.height ?? CARD_HEIGHT) : fromPos.y
           const toY = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
@@ -326,7 +362,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
             midY = (fromY + toY + 6 * bypassY) / 8
           }
         } else {
-          // Horizontal mode: time on X axis, lanes on Y axis
           const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
             ? fromPos.x + fromPos.width : fromPos.x
           const toX = (rel.type === 'Exclusive' || rel.type === 'HaveStarted')
@@ -371,7 +406,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     return { x1, y1: src.y + CARD_HEIGHT / 2, x2: relationDrag.cursorX, y2: relationDrag.cursorY }
   }, [relationDrag, vertical])
 
-  // IDs of tasks that are anchors of the currently selected relationship
   const relAnchorIds = useMemo(() => {
     if (!selectedRelId) return new Set<string>()
     const [predId, taskId] = selectedRelId.split('->')
@@ -525,6 +559,262 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     try { await addPredecessor(taskId, predecessorId, relType); await load() } catch { /* ignore */ }
   }
 
+  // ── Move drag (card body drag) ────────────────────────────────────────────
+
+  function handleCardDragAttempt(taskId: string, clientX: number, clientY: number) {
+    const foundTask = tasksRef.current.find(t => t.id === taskId)
+    if (!foundTask) return
+    // Explicitly typed so TypeScript preserves the non-null type inside closures
+    const task: Task = foundTask
+
+    // Open-ended tasks have no dates: treat as click
+    if (!task.startDate && !task.endDate) {
+      setSelectedTaskId(taskId)
+      setSelectedRelId(null)
+      return
+    }
+
+    const pos = positionsRef.current.get(taskId)
+    if (!pos) return
+
+    const vert = verticalRef.current
+    const ppd  = pixelsPerDayRef.current
+    const vs   = viewStartRef.current
+
+    // The leading-edge pixel position of the card
+    const originalPosPx = vert ? pos.y : pos.x
+    const cardSizePx    = vert ? (pos.height ?? CARD_HEIGHT) : pos.width
+    const endAnchored   = !task.startDate && Boolean(task.endDate)
+
+    const localMap = new Map(tasksRef.current.map(t => [t.id, t]))
+    const corridor = computeMovementCorridor(task, localMap, 'move', ppd, vs, vert)
+
+    let dragInitiated = false
+    moveDeltaRef.current = 0
+    const moveCascadeRef = { current: new Map<string, CascadeUpdate>() }
+
+    function onMove(me: MouseEvent) {
+      const rawDelta = vert ? (me.clientY - clientY) : (me.clientX - clientX)
+
+      if (!dragInitiated) {
+        if (Math.abs(rawDelta) < DRAG_THRESHOLD_PX) return
+        dragInitiated = true
+      }
+
+      // Compute the snapped delta
+      const primaryDateStr = task.startDate ?? task.endDate!
+      const rawDateMs = new Date(primaryDateStr).getTime() + (rawDelta / pixelsPerDayRef.current) * MS_PER_DAY
+      const otherTasks = tasksRef.current.filter(t => t.id !== taskId)
+      const snappedDate = snapDate(new Date(rawDateMs), pixelsPerDayRef.current, otherTasks)
+      const snappedDeltaPx = ((snappedDate.getTime() - new Date(primaryDateStr).getTime()) / MS_PER_DAY) * pixelsPerDayRef.current
+
+      const clampedDelta = clampMoveDelta(corridor, originalPosPx, endAnchored, snappedDeltaPx)
+
+      // Effective new pixel positions of the dragged task's date anchors
+      const newStartPx = task.startDate ? originalPosPx + clampedDelta : null
+      const newEndPx   = task.endDate
+        ? endAnchored
+          ? originalPosPx + CARD_WIDTH + clampedDelta   // end-only: anchor at leading + CARD_WIDTH
+          : originalPosPx + cardSizePx + clampedDelta   // start or both: endDate at leading + size
+        : null
+
+      const cascadeUpdates = computeCascadeUpdates(task, newStartPx, newEndPx, localMap, ppd, vs, vert)
+
+      moveDeltaRef.current = clampedDelta
+      moveCascadeRef.current = cascadeUpdates
+      setMoveDrag({ taskId, originalPosPx, cardSizePx, deltaPx: clampedDelta, corridor, endAnchored, cascadeUpdates })
+    }
+
+    async function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+
+      if (!dragInitiated) {
+        // Treat as click/select
+        setSelectedTaskId(taskId)
+        setSelectedRelId(null)
+        return
+      }
+
+      const delta = moveDeltaRef.current
+      const cascade = moveCascadeRef.current
+      setMoveDrag(null)
+      if (Math.abs(delta) < 1) return
+
+      await commitMove(task, delta, cascade)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  async function commitMove(task: Task, deltaPx: number, cascadeUpdates: Map<string, CascadeUpdate>) {
+    const ppd = pixelsPerDayRef.current
+    const vs  = viewStartRef.current
+    const vert = verticalRef.current
+    const deltaMs = (deltaPx / ppd) * MS_PER_DAY
+    const newStartDate = task.startDate
+      ? new Date(new Date(task.startDate).getTime() + deltaMs).toISOString()
+      : undefined
+    const newEndDate = task.endDate
+      ? new Date(new Date(task.endDate).getTime() + deltaMs).toISOString()
+      : undefined
+
+    try {
+      await updateTask(task.id, {
+        title: task.title,
+        description: task.description ?? undefined,
+        assigneeId: task.assigneeId ?? undefined,
+        status: task.status,
+        priority: task.priority,
+        tags: task.tags,
+        startType: task.startType,
+        startDate: newStartDate,
+        endType: task.endType,
+        endDate: newEndDate,
+      })
+    } catch { /* ignore — reload will revert */ }
+
+    await commitCascade(cascadeUpdates, ppd, vs, vert)
+    await load()
+  }
+
+  async function commitCascade(
+    cascadeUpdates: Map<string, CascadeUpdate>,
+    ppd: number,
+    vs: Date,
+    vert: boolean,
+  ) {
+    for (const [relatedTaskId, update] of cascadeUpdates) {
+      const relatedTask = tasksRef.current.find(t => t.id === relatedTaskId)
+      if (!relatedTask) continue
+      const toDate = (px: number) => vert
+        ? yToDate(px, vs, ppd).toISOString()
+        : xToDate(px, vs, ppd).toISOString()
+      try {
+        await updateTask(relatedTaskId, {
+          title: relatedTask.title,
+          description: relatedTask.description ?? undefined,
+          assigneeId: relatedTask.assigneeId ?? undefined,
+          status: relatedTask.status,
+          priority: relatedTask.priority,
+          tags: relatedTask.tags,
+          startType: relatedTask.startType,
+          startDate: update.startPx !== undefined ? toDate(update.startPx) : (relatedTask.startDate ?? undefined),
+          endType: relatedTask.endType,
+          endDate: update.endPx !== undefined ? toDate(update.endPx) : (relatedTask.endDate ?? undefined),
+        })
+      } catch { /* ignore — reload will revert */ }
+    }
+  }
+
+  // ── Resize drag (edge handle drag) ────────────────────────────────────────
+
+  function handleResizeDragStart(taskId: string, anchor: 'start' | 'end') {
+    const foundTask = tasksRef.current.find(t => t.id === taskId)
+    if (!foundTask) return
+    // Explicitly typed so TypeScript preserves the non-null type inside closures
+    const task: Task = foundTask
+
+    const vert = verticalRef.current
+    const ppd  = pixelsPerDayRef.current
+    const vs   = viewStartRef.current
+    const containerEl = containerRef.current
+    if (!containerEl) return
+    // Captured as HTMLDivElement (not null) so closures can access it safely
+    const container: HTMLDivElement = containerEl
+    const rect = container.getBoundingClientRect()
+
+    const operation = anchor === 'start' ? 'resize-start' : 'resize-end'
+    const localMap = new Map(tasksRef.current.map(t => [t.id, t]))
+    const corridor = computeMovementCorridor(task, localMap, operation, ppd, vs, vert)
+
+    const dateStr = anchor === 'start' ? task.startDate! : task.endDate!
+    const originalPx = vert
+      ? dateToY(new Date(dateStr), vs, ppd)
+      : dateToX(new Date(dateStr), vs, ppd)
+
+    resizePxRef.current = originalPx
+
+    function toCanvasPx(clientCoord: number, scrollCoord: number, rectCoord: number): number {
+      return clientCoord - rectCoord + scrollCoord
+    }
+
+    const resizeCascadeRef = { current: new Map<string, CascadeUpdate>() }
+
+    function onMove(me: MouseEvent) {
+      const rawPx = vert
+        ? toCanvasPx(me.clientY, container.scrollTop, rect.top)
+        : toCanvasPx(me.clientX, container.scrollLeft, rect.left)
+
+      // Snap
+      const rawDate = vert
+        ? yToDate(rawPx, viewStartRef.current, pixelsPerDayRef.current)
+        : xToDate(rawPx, viewStartRef.current, pixelsPerDayRef.current)
+      const otherTasks = tasksRef.current.filter(t => t.id !== taskId)
+      const snappedDate = snapDate(rawDate, pixelsPerDayRef.current, otherTasks)
+      const snappedPx = vert
+        ? dateToY(snappedDate, viewStartRef.current, pixelsPerDayRef.current)
+        : dateToX(snappedDate, viewStartRef.current, pixelsPerDayRef.current)
+
+      const clamped = clampResizePx(corridor, snappedPx)
+
+      // Effective new pixel positions for cascade computation
+      const newStartPx = anchor === 'start' ? clamped : (task.startDate ? dateToX(new Date(task.startDate), vs, ppd) : null)
+      const newEndPx   = anchor === 'end'   ? clamped : (task.endDate   ? dateToX(new Date(task.endDate),   vs, ppd) : null)
+      const cascadeUpdates = computeCascadeUpdates(task, newStartPx, newEndPx, localMap, ppd, vs, vert)
+
+      resizePxRef.current = clamped
+      resizeCascadeRef.current = cascadeUpdates
+      setResizeDrag({ taskId, anchor, currentPx: clamped, corridor, cascadeUpdates })
+    }
+
+    async function onUp() {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+
+      const finalPx = resizePxRef.current
+      const cascade = resizeCascadeRef.current
+      setResizeDrag(null)
+
+      if (Math.abs(finalPx - originalPx) < 1) return
+
+      await commitResize(task, anchor, finalPx, cascade)
+    }
+
+    window.addEventListener('mousemove', onMove)
+    window.addEventListener('mouseup', onUp)
+  }
+
+  async function commitResize(task: Task, anchor: 'start' | 'end', finalPx: number, cascadeUpdates: Map<string, CascadeUpdate>) {
+    const vert = verticalRef.current
+    const vs   = viewStartRef.current
+    const ppd  = pixelsPerDayRef.current
+    const newDate = vert
+      ? yToDate(finalPx, vs, ppd)
+      : xToDate(finalPx, vs, ppd)
+
+    const newDateIso = newDate.toISOString()
+
+    try {
+      await updateTask(task.id, {
+        title: task.title,
+        description: task.description ?? undefined,
+        assigneeId: task.assigneeId ?? undefined,
+        status: task.status,
+        priority: task.priority,
+        tags: task.tags,
+        startType: task.startType,
+        startDate: anchor === 'start' ? newDateIso : (task.startDate ?? undefined),
+        endType: task.endType,
+        endDate: anchor === 'end' ? newDateIso : (task.endDate ?? undefined),
+      })
+    } catch { /* ignore — reload will revert */ }
+
+    await commitCascade(cascadeUpdates, ppd, vs, vert)
+    await load()
+  }
+
   // ── Scroll to today ───────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -550,6 +840,12 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   function clearFilters() { setFilters(DEFAULT_FILTERS) }
   const activeFilterCount = Object.values(filters).filter(Boolean).length
 
+  // ── Drag visual state ─────────────────────────────────────────────────────
+
+  const activeDrag = moveDrag ?? resizeDrag
+  const hasCorridor = activeDrag !== null
+    && (isFinite(activeDrag.corridor.lowerPx) || isFinite(activeDrag.corridor.upperPx))
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   const axisPos: 'top' | 'bottom' | 'left' | 'right' = vertical
@@ -567,6 +863,18 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
   if (loading) return <div className={styles.state}>Loading…</div>
   if (error)   return <div className={styles.stateError}>{error}</div>
+
+  // Ghost card position (during move drag)
+  const ghostCardStyle: CSSProperties | null = (() => {
+    if (!moveDrag) return null
+    const pos = positionsRef.current.get(moveDrag.taskId)
+    if (!pos) return null
+    const ghostLeadPx = moveDrag.originalPosPx + moveDrag.deltaPx
+    if (vertical) {
+      return { left: pos.x, top: ghostLeadPx, width: pos.width, height: moveDrag.cardSizePx }
+    }
+    return { left: ghostLeadPx, top: pos.y, width: moveDrag.cardSizePx }
+  })()
 
   return (
     <div className={styles.root}>
@@ -633,7 +941,6 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
       <div ref={containerRef} className={styles.canvasContainer} onWheel={handleWheel}>
         <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
-          {/* TimeAxis rendered first for top/left, last for bottom/right so sticky positioning works */}
           {(axisPos === 'top' || axisPos === 'left') && timeAxisEl}
 
           <div className={vertical ? styles.weekBandV : styles.weekBand} style={weekBand} aria-hidden="true" />
@@ -642,29 +949,67 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
           <div className={vertical ? styles.nowLineV : styles.nowLine} style={nowLine} aria-label="Current time" />
 
+          {/* Ghost card during move drag */}
+          {ghostCardStyle && (
+            <div className={styles.ghostCard} style={ghostCardStyle} aria-hidden="true" />
+          )}
+
           {filtered.map(task => {
             const pos = positions.get(task.id)
             if (!pos) return null
+
+            // Apply cascade position override for tasks whose free anchors are following the drag
+            const cascadeUpdate = activeDrag?.cascadeUpdates.get(task.id)
+            let renderX = pos.x, renderY = pos.y, renderW = pos.width, renderH = pos.height
+            if (cascadeUpdate && !vertical) {
+              if (cascadeUpdate.startPx !== undefined) {
+                const endPx = task.endDate ? dateToX(new Date(task.endDate), viewStart, pixelsPerDay) : pos.x + pos.width
+                renderX = cascadeUpdate.startPx
+                renderW = Math.max(endPx - cascadeUpdate.startPx, CARD_WIDTH)
+              }
+              if (cascadeUpdate.endPx !== undefined) {
+                const startPx = task.startDate ? dateToX(new Date(task.startDate), viewStart, pixelsPerDay) : pos.x
+                renderW = Math.max(cascadeUpdate.endPx - startPx, CARD_WIDTH)
+              }
+            } else if (cascadeUpdate && vertical) {
+              if (cascadeUpdate.startPx !== undefined) {
+                const endPy = task.endDate ? dateToY(new Date(task.endDate), viewStart, pixelsPerDay) : pos.y + (pos.height ?? CARD_HEIGHT)
+                renderY = cascadeUpdate.startPx
+                renderH = Math.max(endPy - cascadeUpdate.startPx, CARD_HEIGHT)
+              }
+              if (cascadeUpdate.endPx !== undefined) {
+                const startPy = task.startDate ? dateToY(new Date(task.startDate), viewStart, pixelsPerDay) : pos.y
+                renderH = Math.max(cascadeUpdate.endPx - startPy, CARD_HEIGHT)
+              }
+            }
+
             return (
               <TaskGraphItem
                 key={task.id}
                 task={task}
                 taskMap={taskMap}
-                x={pos.x}
-                y={pos.y}
-                width={pos.width}
-                height={vertical ? pos.height : undefined}
+                x={renderX}
+                y={renderY}
+                width={renderW}
+                height={vertical ? renderH : undefined}
                 selected={selectedTaskId === task.id || relAnchorIds.has(task.id)}
                 isDragTarget={dragTargetId === task.id}
+                isDragging={moveDrag?.taskId === task.id || resizeDrag?.taskId === task.id}
+                vertical={vertical}
                 onSelect={id => { setSelectedTaskId(id); setSelectedRelId(null) }}
+                onCardDragAttempt={handleCardDragAttempt}
                 onRelationDragStart={handleRelationDragStart}
+                onResizeDragStart={handleResizeDragStart}
               />
             )
           })}
 
-          {/* SVG z-index elevates when a relationship is selected so it renders over all cards */}
+          {/* SVG: arrows + drag visuals; z-index elevated during drag so lines render above cards */}
           <svg className={styles.arrowsSvg} width={canvasWidth} height={canvasHeight}
-            style={{ pointerEvents: 'none', zIndex: selectedRelId ? 20 : 1 }}>
+            style={{
+              pointerEvents: 'none',
+              zIndex: selectedRelId ? 20 : (moveDrag || resizeDrag) ? 12 : 1,
+            }}>
             <defs>
               <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-border-strong)" />
@@ -676,6 +1021,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
               </marker>
             </defs>
+
             {arrows.map(a => {
               const relSelected  = a.id === selectedRelId
               const taskHighlight = selectedTaskId !== null && (a.fromId === selectedTaskId || a.toId === selectedTaskId)
@@ -683,18 +1029,15 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
               const dimmed = !highlighted && (selectedTaskId !== null || selectedRelId !== null)
               return (
                 <g key={a.id}>
-                  {/* Invisible wide hit area for click detection */}
                   <path d={a.d} fill="none" stroke="transparent" strokeWidth={12}
                     style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
                     onClick={() => { setSelectedRelId(a.id); setSelectedTaskId(null) }} />
-                  {/* Visible arrow */}
                   <path d={a.d} fill="none"
                     stroke={highlighted ? 'var(--color-primary)' : 'var(--color-border-strong)'}
                     strokeWidth={highlighted ? 2.5 : 1.5}
                     strokeDasharray={a.dashed ? '4 4' : undefined}
                     markerEnd={highlighted ? 'url(#arrowhead-highlighted)' : 'url(#arrowhead)'}
                     opacity={highlighted ? 1 : dimmed ? 0.2 : 0.6} />
-                  {/* Delete button — only on the selected relationship */}
                   {relSelected && (
                     <g transform={`translate(${a.midX}, ${a.midY})`}
                       style={{ pointerEvents: 'all', cursor: 'pointer' }}
@@ -708,17 +1051,79 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
                 </g>
               )
             })}
+
             {dragLine && (
               <line x1={dragLine.x1} y1={dragLine.y1} x2={dragLine.x2} y2={dragLine.y2}
                 stroke="var(--color-primary)" strokeWidth="2" strokeDasharray="6 3"
                 markerEnd="url(#arrowhead-drag)" opacity="0.8" />
             )}
+
+            {/* ── Corridor band ── */}
+            {hasCorridor && (() => {
+              const { lowerPx, upperPx } = activeDrag!.corridor
+              const lo = isFinite(lowerPx) ? lowerPx : 0
+              // For move drags extend the band to show the full task extent
+              // (latest trailing-edge = upperPx + cardSize)
+              const trailExtra = moveDrag ? moveDrag.cardSizePx : 0
+              const hi = isFinite(upperPx)
+                ? upperPx + trailExtra
+                : (vertical ? canvasHeight : canvasWidth)
+              return vertical
+                ? <rect x={0} y={lo} width={canvasWidth} height={Math.max(0, hi - lo)}
+                    fill="var(--color-primary)" opacity={0.07} />
+                : <rect x={lo} y={0} width={Math.max(0, hi - lo)} height={canvasHeight}
+                    fill="var(--color-primary)" opacity={0.07} />
+            })()}
+
+            {/* Corridor limit lines */}
+            {hasCorridor && isFinite(activeDrag!.corridor.lowerPx) && (
+              vertical
+                ? <line x1={0} y1={activeDrag!.corridor.lowerPx} x2={canvasWidth} y2={activeDrag!.corridor.lowerPx}
+                    stroke="var(--color-primary)" strokeWidth={1} opacity={0.4} strokeDasharray="3 3" />
+                : <line x1={activeDrag!.corridor.lowerPx} y1={0} x2={activeDrag!.corridor.lowerPx} y2={canvasHeight}
+                    stroke="var(--color-primary)" strokeWidth={1} opacity={0.4} strokeDasharray="3 3" />
+            )}
+            {hasCorridor && isFinite(activeDrag!.corridor.upperPx) && (
+              vertical
+                ? <line x1={0} y1={activeDrag!.corridor.upperPx} x2={canvasWidth} y2={activeDrag!.corridor.upperPx}
+                    stroke="var(--color-primary)" strokeWidth={1} opacity={0.4} strokeDasharray="3 3" />
+                : <line x1={activeDrag!.corridor.upperPx} y1={0} x2={activeDrag!.corridor.upperPx} y2={canvasHeight}
+                    stroke="var(--color-primary)" strokeWidth={1} opacity={0.4} strokeDasharray="3 3" />
+            )}
+
+            {/* ── Alignment lines during move ── */}
+            {moveDrag && (() => {
+              const leadPx = moveDrag.originalPosPx + moveDrag.deltaPx
+              const trailPx = leadPx + moveDrag.cardSizePx
+              return vertical ? (
+                <>
+                  <line x1={0} y1={leadPx}  x2={canvasWidth} y2={leadPx}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+                  <line x1={0} y1={trailPx} x2={canvasWidth} y2={trailPx}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+                </>
+              ) : (
+                <>
+                  <line x1={leadPx}  y1={0} x2={leadPx}  y2={canvasHeight}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+                  <line x1={trailPx} y1={0} x2={trailPx} y2={canvasHeight}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+                </>
+              )
+            })()}
+
+            {/* ── Alignment line during resize ── */}
+            {resizeDrag && (
+              vertical
+                ? <line x1={0} y1={resizeDrag.currentPx} x2={canvasWidth} y2={resizeDrag.currentPx}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+                : <line x1={resizeDrag.currentPx} y1={0} x2={resizeDrag.currentPx} y2={canvasHeight}
+                    stroke="var(--color-primary)" strokeWidth={1.5} strokeDasharray="4 3" opacity={0.65} />
+            )}
           </svg>
 
           {(axisPos === 'bottom' || axisPos === 'right') && timeAxisEl}
         </div>
-
-
       </div>
 
       <div className={styles.actionPanel}>

@@ -35,6 +35,8 @@ function renderItem(
 ) {
   const onSelect = vi.fn()
   const onRelationDragStart = vi.fn()
+  const onCardDragAttempt = vi.fn()
+  const onResizeDragStart = vi.fn()
 
   const result = render(
     <TaskGraphItem
@@ -47,10 +49,12 @@ function renderItem(
       isDragTarget={false}
       onSelect={onSelect}
       onRelationDragStart={onRelationDragStart}
+      onCardDragAttempt={onCardDragAttempt}
+      onResizeDragStart={onResizeDragStart}
     />,
   )
 
-  return { onSelect, onRelationDragStart, container: result.container }
+  return { onSelect, onRelationDragStart, onCardDragAttempt, onResizeDragStart, container: result.container }
 }
 
 describe('TaskGraphItem', () => {
@@ -133,6 +137,8 @@ describe('TaskGraphItem', () => {
         isDragTarget={true}
         onSelect={vi.fn()}
         onRelationDragStart={vi.fn()}
+        onCardDragAttempt={vi.fn()}
+        onResizeDragStart={vi.fn()}
       />,
     )
     // CSS modules hash class names — check that the className contains "dragTarget"
@@ -149,7 +155,8 @@ describe('hybrid gradient border (T6)', () => {
     const { container } = render(
       <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
         x={0} y={0} selected={false} isDragTarget={false}
-        onSelect={vi.fn()} onRelationDragStart={vi.fn()} />,
+        onSelect={vi.fn()} onRelationDragStart={vi.fn()}
+        onCardDragAttempt={vi.fn()} onResizeDragStart={vi.fn()} />,
     )
     // CSS modules hash class names — check className contains "gradient"
     expect((container.firstChild as Element)?.className).toMatch(/gradient/)
@@ -162,7 +169,8 @@ describe('hybrid gradient border (T6)', () => {
     const { container } = render(
       <TaskGraphItem task={task} taskMap={new Map([[task.id, task]])}
         x={0} y={0} selected={false} isDragTarget={false}
-        onSelect={vi.fn()} onRelationDragStart={vi.fn()} />,
+        onSelect={vi.fn()} onRelationDragStart={vi.fn()}
+        onCardDragAttempt={vi.fn()} onResizeDragStart={vi.fn()} />,
     )
     expect((container.firstChild as Element)?.className).not.toMatch(/gradient/)
   })

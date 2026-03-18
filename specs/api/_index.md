@@ -28,7 +28,7 @@ REST API with JWT authentication.  All endpoints require a valid Bearer token un
 | GET | /tasks | List tasks (supports filtering/sorting) |
 | POST | /tasks | Create task |
 | GET | /tasks/{id} | Get task |
-| PUT | /tasks/{id} | Update task |
+| PUT | /tasks/{id} | Update task (validates relationship constraints; returns `422` if a date change would violate any existing relationship) |
 | DELETE | /tasks/{id} | Delete task |
 
 ## Task Relationships

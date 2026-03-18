@@ -52,6 +52,89 @@ Each side (start side and end side) indicates whether it is constrained:
   - Hovering for >500 ms temporarily expands the card to standard content width
   - The expanded card may overlap nearby cards and is rendered on top
 
+## Date Manipulation via Drag
+
+### Relationship-Aware Movement Bounds
+
+Each relationship type constrains which anchors must remain in order relative to each other. Before and during any drag operation, the valid movement corridor for the task is computed from all its relationships:
+
+| Relationship type | Constraint |
+|---|---|
+| **Exclusive** | pred.end ≤ succ.start |
+| **HaveStarted** | pred.start ≤ succ.start |
+| **HaveCompleted** | pred.end ≤ succ.end |
+| **HandOff** | pred.start ≤ succ.end |
+
+When moving a **predecessor**, the constraint places an upper bound on how far right it can move.
+When moving a **successor**, the constraint places a lower bound on how far left it can move.
+When multiple relationships apply, the effective corridor is the intersection of all individual bounds (tightest lower bound and tightest upper bound).
+
+#### Fixed vs Free Anchors
+
+An anchor date involved in a relationship constraint is either **fixed** (the date is set on that task) or **free** (the date is null/unset). Each free anchor has a **natural position** — the position it occupies visually based on the task's card rendering:
+
+- Free **start** (no startDate): natural position = endDate position − card width
+- Free **end** (no endDate): natural position = startDate position + card width
+
+Constraints involving a fixed anchor on the related task generate corridor bounds as normal (the dragged task is clamped). Constraints involving a **free** anchor on the related task do not clamp the dragged task — instead, the free anchor **follows** the dragged anchor in real time.
+
+#### Free Anchor Cascade During Drag
+
+When a drag operation moves an anchor past the **critical point** — the natural position of a related task's free anchor — that free anchor begins following the dragged anchor to visually maintain the constraint:
+
+- As the dragged anchor moves further past the critical point, the related free anchor tracks it exactly.
+- If the dragged anchor moves back within the critical point, the free anchor returns to its natural position.
+- This cascade propagates transitively: if a cascaded anchor itself crosses another task's free anchor critical point, that anchor also follows.
+
+The related task card is re-rendered in real time to reflect the cascaded anchor position during the drag.
+
+#### On Commit
+
+When the drag is released:
+- Free anchors that were pulled past their critical point are saved with their cascaded date values.
+- Free anchors that were not past their critical point at drop time remain null (unset).
+
+#### Visual Corridor
+When a drag begins, the valid movement corridor is rendered as a semi-transparent highlighted band across the graph. Hard limit lines mark the anchor constraint boundaries. The corridor is derived from fixed anchors only; free anchors do not contribute corridor bounds.
+
+- For **move drags**, the band spans the full range the task can occupy — from the earliest possible leading-edge position to the latest possible trailing-edge position.
+- For **resize drags**, the band spans the valid range of the dragged anchor only.
+
+**The drag is clamped at these limits; it is not possible to commit a date that violates a relationship constraint via drag.** If no relationships constrain movement, no corridor band is shown.
+
+### Moving a Task (Full Card Drag)
+
+Dragging the card body (not an anchor widget or edge handle) moves the task in time.
+
+- A ghost card follows the cursor while dragging
+- Two alignment lines span the graph at the projected start and end positions
+- The relationship-aware movement corridor is shown (see above)
+- The task cannot be dragged outside the corridor
+- Snapping applies (see **Snapping** below)
+- On drop: both start and end dates shift by the same delta
+- Tasks with only one date set: only that date shifts; the unconstrained side remains unconstrained
+- Open-ended tasks (no dates): cannot be moved this way
+
+### Resizing a Task (Edge Handle Drag)
+
+Constrained sides (those with a set date) show a thin drag handle on hover.
+
+- Dragging the start-side handle adjusts the start date
+- Dragging the end-side handle adjusts the end date
+- A single alignment line spans the graph at the projected new date
+- The movement corridor for the dragged anchor is computed from all relationships involving that anchor and shown as a highlighted band; the handle cannot be dragged outside it
+- Snapping applies (see **Snapping** below)
+- On drop: the dragged date is updated
+
+### Snapping
+
+During any drag that adjusts a date, the projected date snaps to:
+
+- The nearest time axis tick (interval matches the current zoom level)
+- The start or end date of any other visible task (within a pixel proximity threshold)
+
+Snap targets are visually highlighted when active. Snapping never overrides the movement corridor — a snap target outside the corridor is ignored.
+
 ## Due Status
 The task's due status is determined by its timing and the current time.  Tasks which sit entirely within a time period (i.e., 'Soon Due') are given that status.  Tasks which overlap more than one time period (i.e., Start in 'Present' but End in 'Due Soon') are given a hybrid status (i.e., 'Present/Soon Due').
 

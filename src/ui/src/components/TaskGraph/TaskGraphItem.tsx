@@ -21,8 +21,16 @@ interface TaskGraphItemProps {
   height?: number
   selected: boolean
   isDragTarget: boolean
+  /** True while this card is being dragged (dims the card). */
+  isDragging?: boolean
+  /** True when layout direction is vertical (affects resize handle orientation). */
+  vertical?: boolean
   onSelect: (id: string) => void
+  /** Called on card-body mousedown — parent decides whether it becomes a drag or a click. */
+  onCardDragAttempt: (taskId: string, clientX: number, clientY: number) => void
   onRelationDragStart: (sourceId: string, anchor: AnchorType, clientX: number, clientY: number) => void
+  /** Called when a resize handle is pressed. */
+  onResizeDragStart: (taskId: string, anchor: 'start' | 'end') => void
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────
@@ -65,8 +73,12 @@ export function TaskGraphItem({
   height,
   selected,
   isDragTarget,
+  isDragging = false,
+  vertical = false,
   onSelect,
+  onCardDragAttempt,
   onRelationDragStart,
+  onResizeDragStart,
 }: TaskGraphItemProps) {
   const dueStatus = computeDueStatus(task)
   const timeLabel = getTimeLabel(task)
@@ -86,12 +98,22 @@ export function TaskGraphItem({
   // Effective rendered width: expand on hover if reduced
   const effectiveWidth = isReduced && hoverExpanded ? CARD_WIDTH : width
 
-  // ── Card click (select) ──────────────────────────────────────────────────
+  // ── Card body mousedown — parent decides drag vs click ────────────────────
 
   function handleCardMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return
     e.stopPropagation()
-    onSelect(task.id)
+    e.preventDefault()
+    onCardDragAttempt(task.id, e.clientX, e.clientY)
+  }
+
+  // ── Keyboard selection ────────────────────────────────────────────────────
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onSelect(task.id)
+    }
   }
 
   // ── Hover expand (reduced cards only) ────────────────────────────────────
@@ -117,6 +139,14 @@ export function TaskGraphItem({
     onRelationDragStart(task.id, anchor, e.clientX, e.clientY)
   }
 
+  // ── Resize handle drag ────────────────────────────────────────────────────
+
+  function handleResizeMouseDown(e: React.MouseEvent, anchor: 'start' | 'end') {
+    e.stopPropagation()
+    e.preventDefault()
+    onResizeDragStart(task.id, anchor)
+  }
+
   // ── Style ────────────────────────────────────────────────────────────────
 
   const cardStyle = {
@@ -134,6 +164,7 @@ export function TaskGraphItem({
     isGradient           ? styles.gradient    : '',
     selected             ? styles.selected    : '',
     isDragTarget         ? styles.dragTarget  : '',
+    isDragging           ? styles.dragging    : '',
     hasStartConstraint   ? styles.constrainedStart   : styles.unconstrainedStart,
     hasEndConstraint     ? styles.constrainedEnd     : styles.unconstrainedEnd,
     isReduced            ? styles.reduced     : '',
@@ -155,11 +186,9 @@ export function TaskGraphItem({
       tabIndex={0}
       aria-label={task.title}
       aria-pressed={selected}
-      onKeyDown={e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(task.id) }
-      }}
+      onKeyDown={handleKeyDown}
     >
-      {/* ── Start anchor widget T11 ── */}
+      {/* ── Start anchor widget (relation drag) ── */}
       <div
         className={styles.widgetStart}
         title="Drag to create a relationship"
@@ -171,7 +200,7 @@ export function TaskGraphItem({
         ◀
       </div>
 
-      {/* ── End anchor widget T11 ── */}
+      {/* ── End anchor widget (relation drag) ── */}
       <div
         className={styles.widgetEnd}
         title="Drag to create a relationship"
@@ -182,6 +211,24 @@ export function TaskGraphItem({
       >
         ▶
       </div>
+
+      {/* ── Resize handles (date manipulation) — only on constrained sides ── */}
+      {hasStartConstraint && (
+        <div
+          className={`${styles.resizeHandle} ${vertical ? styles.resizeHandleStartV : styles.resizeHandleStart}`}
+          title="Drag to change start date"
+          onMouseDown={e => handleResizeMouseDown(e, 'start')}
+          aria-label="Drag to resize start date"
+        />
+      )}
+      {hasEndConstraint && (
+        <div
+          className={`${styles.resizeHandle} ${vertical ? styles.resizeHandleEndV : styles.resizeHandleEnd}`}
+          title="Drag to change end date"
+          onMouseDown={e => handleResizeMouseDown(e, 'end')}
+          aria-label="Drag to resize end date"
+        />
+      )}
 
       {/* ── Card content ── */}
       <div className={showWideContent ? styles.wideContent : styles.content}>

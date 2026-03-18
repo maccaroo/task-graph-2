@@ -162,6 +162,29 @@
 ## P20b - Avatar Persistence
 [x] T1 - Mount Docker volume for avatar storage so uploads persist across redeployments
 
+## P22 - Task Date Manipulation via Drag
+[x] T1 - Snap utility: given a pixel position, resolve nearest snap target (time axis tick or other task's start/end date)
+[x] T2 - Constraint bounds utility: given a task and operation (move/resize-start/resize-end), compute the valid movement corridor from all relationship constraints
+[x] T3 - Full card drag to move task: drag card body shifts both dates by the same delta
+[x] T4 - Move visual feedback: ghost card + dual alignment lines at projected start/end + corridor band with hard limit lines
+[x] T5 - Edge handle (start/end) drag to resize: drag constrained-side handle adjusts that date only
+[x] T6 - Resize visual feedback: single alignment line at projected date + corridor band for the dragged anchor
+[x] T7 - Enforce corridor: task/handle cannot be dragged past corridor bounds; snaps to boundary if approaching
+[x] T8 - Snap integration: snap to tick and to other tasks' dates during move and resize (snap targets outside corridor are ignored)
+[x] T9 - Fix: corridor band for move drags spans full task extent (earliest leading-edge to latest trailing-edge position)
+[x] T10 - Fix: separate resize handles and anchor widgets spatially so edge handles are independently clickable
+[x] T11 - Fix: PUT /tasks/{id} validates all existing relationship constraints; returns 422 on violation
+[x] T12 - Fix: end-only task move-drag clamping was off by CARD_WIDTH; extract clampMoveDelta and add enforcement tests for all relationship types
+
+## P23 - Free Anchor Cascade During Drag
+[x] T1 - Add naturalAnchorPx utility: compute implied pixel position for a free (null) anchor based on card rendering
+[x] T2 - Add computeCascadeUpdates: for given new task position, return map of related task IDs → cascaded free anchor pixel positions
+[x] T3 - Consolidate all constraint logic into dragConstraints.ts (remove inline clamping from TaskGraph.tsx)
+[x] T4 - Render cascaded task cards in real time during drag (re-render related task at cascade position)
+[x] T5 - On drop, save cascaded anchor dates via API for each affected task
+[x] T6 - Tests: naturalAnchorPx for all anchor/task combinations
+[x] T7 - Tests: computeCascadeUpdates for all four relationship types × fixed/free anchor combinations
+
 ## P21 - End-to-End Testing
 [ ] T1 - E2E: user registration and login flow
 [ ] T2 - E2E: create, edit, and delete a task

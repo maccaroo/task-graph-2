@@ -523,6 +523,117 @@ public class TaskServiceTests
             service.DeletePredecessorAsync(Guid.NewGuid(), Guid.NewGuid()));
     }
 
+    // --- UpdateAsync relationship constraint validation ---
+
+    private static async Task SeedRelationship(AppDbContext db, Guid taskId, Guid predecessorId, RelationshipType type)
+    {
+        db.TaskRelationships.Add(new TaskRelationship
+        {
+            TaskId = taskId,
+            PredecessorId = predecessorId,
+            RelationshipType = type,
+        });
+        await db.SaveChangesAsync();
+    }
+
+    private static UpdateTaskRequest MakeUpdateRequest(
+        string title = "Task",
+        TimingType startType = TimingType.None,
+        DateTime? startDate = null,
+        TimingType endType = TimingType.None,
+        DateTime? endDate = null)
+        => new(title, null, null, TaskStatus.Incomplete, TaskPriority.Medium, [], startType, startDate, endType, endDate, null);
+
+    [Fact]
+    public async Task Update_Exclusive_MovingTaskStartBeforePredecessorEnd_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", endType: TimingType.Fixed, endDate: now.AddDays(5));
+        var task = await SeedTask(db, "Task", startType: TimingType.Fixed, startDate: now.AddDays(6));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.Exclusive);
+
+        // Move task start before pred end — violates Exclusive
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateAsync(task.Id, MakeUpdateRequest(
+                startType: TimingType.Fixed, startDate: now.AddDays(3))));
+    }
+
+    [Fact]
+    public async Task Update_Exclusive_ValidDates_Succeeds()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", endType: TimingType.Fixed, endDate: now.AddDays(5));
+        var task = await SeedTask(db, "Task", startType: TimingType.Fixed, startDate: now.AddDays(6));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.Exclusive);
+
+        // Move task start further after pred end — still valid
+        var result = await service.UpdateAsync(task.Id, MakeUpdateRequest(
+            startType: TimingType.Fixed, startDate: now.AddDays(10)));
+
+        Assert.Equal(now.AddDays(10).Date, result.StartDate!.Value.Date);
+    }
+
+    [Fact]
+    public async Task Update_HaveStarted_MovingTaskStartBeforePredecessorStart_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", startType: TimingType.Fixed, startDate: now.AddDays(5));
+        var task = await SeedTask(db, "Task", startType: TimingType.Fixed, startDate: now.AddDays(7));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HaveStarted);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateAsync(task.Id, MakeUpdateRequest(
+                startType: TimingType.Fixed, startDate: now.AddDays(3))));
+    }
+
+    [Fact]
+    public async Task Update_HaveCompleted_MovingTaskEndBeforePredecessorEnd_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", endType: TimingType.Fixed, endDate: now.AddDays(10));
+        var task = await SeedTask(db, "Task", endType: TimingType.Fixed, endDate: now.AddDays(12));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HaveCompleted);
+
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateAsync(task.Id, MakeUpdateRequest(
+                endType: TimingType.Fixed, endDate: now.AddDays(8))));
+    }
+
+    [Fact]
+    public async Task Update_HandOff_MovingTaskEndBeforePredecessorStart_ThrowsValidation()
+    {
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", startType: TimingType.Fixed, startDate: now.AddDays(10));
+        var task = await SeedTask(db, "Task", endType: TimingType.Fixed, endDate: now.AddDays(12));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HandOff);
+
+        // Move task end before pred start — violates HandOff
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateAsync(task.Id, MakeUpdateRequest(
+                endType: TimingType.Fixed, endDate: now.AddDays(8))));
+    }
+
+    [Fact]
+    public async Task Update_AsSuccessor_Exclusive_MovingPredecessorEndAfterTaskStart_ThrowsValidation()
+    {
+        // When we update the predecessor task, its successor relationships are validated
+        var (service, db, _) = CreateService();
+        var now = DateTime.UtcNow;
+        var pred = await SeedTask(db, "Pred", endType: TimingType.Fixed, endDate: now.AddDays(3));
+        var task = await SeedTask(db, "Task", startType: TimingType.Fixed, startDate: now.AddDays(5));
+        await SeedRelationship(db, task.Id, pred.Id, RelationshipType.Exclusive);
+
+        // Move pred end past task start — violates Exclusive from the successor side
+        await Assert.ThrowsAsync<ValidationException>(() =>
+            service.UpdateAsync(pred.Id, MakeUpdateRequest(
+                endType: TimingType.Fixed, endDate: now.AddDays(7))));
+    }
+
     // --- Assignment notification ---
 
     [Fact]
