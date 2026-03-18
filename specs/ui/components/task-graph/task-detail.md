@@ -11,10 +11,10 @@ It contains the following features:
 - Timing
     - Start
         - Type [None | Fixed | Flexible]
-        - Date/Time
+        - Date/Time — uses the `DateTimePicker` component (see `date-time-picker.md`); defaults to `00:00`
     - End
         - Type [None | Fixed | Flexible]
-        - Date/Time
+        - Date/Time — uses the `DateTimePicker` component; defaults to `23:59`
     - Duration
 - Relationships
     - Predecessors

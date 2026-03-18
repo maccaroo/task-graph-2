@@ -1,5 +1,5 @@
 import { type FormEvent, useEffect, useState } from 'react'
-import { Button, Input, Modal } from '../ui'
+import { Button, DateTimePicker, Input, Modal } from '../ui'
 import { type UserSummary, getUsers } from '../../services/users'
 import { createTask, type CreateTaskData, type TaskPriority, type TimingType } from '../../services/tasks'
 import styles from './AddTaskModal.module.css'
@@ -137,11 +137,10 @@ export function AddTaskModal({ open, onClose, onCreated }: AddTaskModalProps) {
           {startType !== 'None' && (
             <div className={styles.field}>
               <label className={styles.label}>Start date</label>
-              <input
-                type="datetime-local"
-                className={styles.dateInput}
+              <DateTimePicker
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                onChange={setStartDate}
+                defaultTime="00:00"
               />
             </div>
           )}
@@ -159,11 +158,10 @@ export function AddTaskModal({ open, onClose, onCreated }: AddTaskModalProps) {
           {endType !== 'None' && (
             <div className={styles.field}>
               <label className={styles.label}>End date</label>
-              <input
-                type="datetime-local"
-                className={styles.dateInput}
+              <DateTimePicker
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                onChange={setEndDate}
+                defaultTime="23:59"
               />
             </div>
           )}

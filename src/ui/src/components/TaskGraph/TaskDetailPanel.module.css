@@ -144,6 +144,11 @@
   min-width: 0;
 }
 
+.datePicker {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Sections ──────────────────────────────────────── */
 
 .section {

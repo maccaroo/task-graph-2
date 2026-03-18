@@ -9,6 +9,7 @@ import {
   type TimingType,
 } from '../../services/tasks'
 import { type UserSummary } from '../../services/users'
+import { DateTimePicker } from '../ui'
 import styles from './TaskDetailPanel.module.css'
 
 interface TaskDetailPanelProps {
@@ -237,11 +238,11 @@ export function TaskDetailPanel({
                 <option value="Flexible">Flexible</option>
               </select>
               {startType !== 'None' && (
-                <input
-                  type="datetime-local"
-                  className={styles.dateInput}
+                <DateTimePicker
                   value={startDate}
-                  onChange={e => { setStartDate(e.target.value); markDirty() }}
+                  onChange={v => { setStartDate(v); markDirty() }}
+                  defaultTime="00:00"
+                  className={styles.datePicker}
                 />
               )}
             </div>
@@ -260,11 +261,11 @@ export function TaskDetailPanel({
                 <option value="Flexible">Flexible</option>
               </select>
               {endType !== 'None' && (
-                <input
-                  type="datetime-local"
-                  className={styles.dateInput}
+                <DateTimePicker
                   value={endDate}
-                  onChange={e => { setEndDate(e.target.value); markDirty() }}
+                  onChange={v => { setEndDate(v); markDirty() }}
+                  defaultTime="23:59"
+                  className={styles.datePicker}
                 />
               )}
             </div>
