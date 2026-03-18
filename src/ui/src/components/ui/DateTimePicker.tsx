@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import styles from './DateTimePicker.module.css'
 
 interface DateTimePickerProps {
@@ -20,6 +20,15 @@ function formatDisplay(value: string): string {
   return timePart ? `${dateStr} · ${timePart}` : dateStr
 }
 
+function splitValue(value: string): { date: string; time: string } {
+  if (!value) return { date: '', time: '' }
+  const sep = value.indexOf('T')
+  return {
+    date: sep >= 0 ? value.slice(0, sep) : value,
+    time: sep >= 0 ? value.slice(sep + 1, sep + 6) : '',
+  }
+}
+
 export function DateTimePicker({ value, onChange, defaultTime = '00:00', className }: DateTimePickerProps) {
   const uid = useId()
   const dateId = `${uid}-date`
@@ -28,18 +37,20 @@ export function DateTimePicker({ value, onChange, defaultTime = '00:00', classNa
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
 
-  // Initialise picker state from the current value each time it opens
-  useEffect(() => {
-    if (!open) return
-    if (value) {
-      const sep = value.indexOf('T')
-      setDate(sep >= 0 ? value.slice(0, sep) : value)
-      setTime(sep >= 0 ? value.slice(sep + 1, sep + 6) : '')
+  function handleOpen() {
+    const parts = splitValue(value)
+    setDate(parts.date)
+    setTime(parts.time)
+    setOpen(true)
+  }
+
+  function handleToggle() {
+    if (open) {
+      setOpen(false)
     } else {
-      setDate('')
-      setTime('')
+      handleOpen()
     }
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   function handleConfirm() {
     onChange(date ? `${date}T${time || defaultTime}` : '')
@@ -56,7 +67,7 @@ export function DateTimePicker({ value, onChange, defaultTime = '00:00', classNa
       <button
         type="button"
         className={`${styles.trigger} ${!value ? styles.triggerEmpty : ''}`}
-        onClick={() => setOpen(v => !v)}
+        onClick={handleToggle}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
@@ -74,8 +85,6 @@ export function DateTimePicker({ value, onChange, defaultTime = '00:00', classNa
               className={styles.input}
               value={date}
               onChange={e => setDate(e.target.value)}
-              // eslint-disable-next-line jsx-a11y/no-autofocus
-              autoFocus
             />
           </div>
 
