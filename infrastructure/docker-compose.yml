@@ -26,6 +26,8 @@ services:
       - "${API_PORT:-5000}:8080"
     depends_on:
       - db
+    volumes:
+      - avatars_data:/app/wwwroot/avatars
 
   ui:
     build:
@@ -39,3 +41,4 @@ services:
 
 volumes:
   db_data:
+  avatars_data:

@@ -159,6 +159,9 @@
 [x] T2 - Build FAQ view
 [x] T3 - Build User Guide view (step-by-step instructions with screenshots)
 
+## P20b - Avatar Persistence
+[x] T1 - Mount Docker volume for avatar storage so uploads persist across redeployments
+
 ## P21 - End-to-End Testing
 [ ] T1 - E2E: user registration and login flow
 [ ] T2 - E2E: create, edit, and delete a task
