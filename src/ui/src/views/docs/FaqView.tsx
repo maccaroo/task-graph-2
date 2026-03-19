@@ -71,8 +71,33 @@ const FAQ_DATA: FaqCategory[] = [
         a: 'Hold Ctrl (or Cmd on Mac) and scroll to zoom in and out. Click and drag on an empty area of the canvas to pan.',
       },
       {
+        q: 'How do I zoom using the toolbar controls?',
+        a: 'Use the zoom in (+) and zoom out (−) buttons in the graph toolbar, or drag the slider between them. Zoom out is limited to 20% beyond the full end-to-end span of the graph so tasks stay visible.',
+      },
+      {
+        q: 'What is the mini-map?',
+        a: 'The mini-map is a small overlay in the corner of the graph view showing the full graph at a reduced scale. The currently visible area is highlighted. Click or drag anywhere on the mini-map to jump to that part of the graph.',
+      },
+      {
+        q: 'How do I reposition a task?',
+        a: 'Drag the body of a task card to move it on the canvas. Drag a start or end edge handle to resize (adjust) that date. All moves are constrained by the task\'s dependency relationships.',
+      },
+      {
+        q: 'How do I adjust a task\'s dates by dragging?',
+        a: 'Drag the main body of a task card to shift both dates by the same amount (move). Drag the left or right edge handle to adjust only the start or end date (resize). Snap targets and a visual corridor show valid positions during the drag.',
+      },
+      {
         q: 'What is the current-time indicator line?',
         a: 'A vertical line on the graph marks the current moment, making it easy to see which tasks are overdue, active, or upcoming relative to now.',
+      },
+    ],
+  },
+  {
+    title: 'Undo / Redo',
+    items: [
+      {
+        q: 'How do I undo or redo a change?',
+        a: 'Press Ctrl+Z (Cmd+Z on Mac) to undo the last action, or Ctrl+Y (Cmd+Shift+Z on Mac) to redo it. Undo and redo buttons are also available in the graph toolbar. Supported actions include task position drags and task detail edits (title, dates, assignee, etc.).',
       },
     ],
   },

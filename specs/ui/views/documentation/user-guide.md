@@ -24,7 +24,13 @@ Clicking a sidebar link scrolls to the corresponding section.
 ### Graph View
 - Reading the timeline
 - Panning and zooming
+- Using zoom controls (toolbar buttons, slider, mouse wheel)
+- Using the mini-map to navigate
 - Pinning / repositioning tasks
+- Adjusting task dates by dragging
+
+### Undo / Redo
+- Undoing and redoing changes (Ctrl+Z / Ctrl+Y, toolbar buttons)
 
 ### Dependencies
 - Adding a predecessor or successor

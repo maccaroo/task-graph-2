@@ -18,6 +18,8 @@ Rendered inside AppShell (Statusbar + main area). No sidebar.
   - Dependency relationships between tasks
   - Real-time notifications
   - Configurable time axis and display
+  - Zoom controls and mini-map for graph navigation
+  - Undo/redo for task position and detail changes
 
 ### Technology
 - Frontend: React + TypeScript + Vite

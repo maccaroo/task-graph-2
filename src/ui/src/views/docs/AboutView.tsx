@@ -16,6 +16,8 @@ export function AboutView() {
             <li>Dependency relationships between tasks</li>
             <li>Real-time notifications</li>
             <li>Configurable time axis and display</li>
+            <li>Zoom controls and mini-map for graph navigation</li>
+            <li>Undo/redo for task position and detail changes</li>
           </ul>
         </section>
 

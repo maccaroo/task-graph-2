@@ -108,6 +108,58 @@ const GUIDE_SECTIONS: GuideSection[] = [
           'Click and drag on an empty area of the canvas to pan left or right.',
         ],
       },
+      {
+        title: 'Using zoom controls',
+        steps: [
+          'Click the + button in the toolbar to zoom in, or − to zoom out.',
+          'Drag the slider between the buttons for continuous zoom adjustment.',
+          'Zoom out is limited to 20% beyond the full span of the graph so tasks remain visible.',
+        ],
+      },
+      {
+        title: 'Using the mini-map',
+        steps: [
+          'The mini-map overlay in the graph corner shows the entire graph at a reduced scale.',
+          'The highlighted region on the mini-map represents the area currently visible in the main canvas.',
+          'Click anywhere on the mini-map to jump the viewport to that location.',
+          'Drag on the mini-map to pan the graph viewport continuously.',
+        ],
+        screenshot: true,
+      },
+      {
+        title: 'Repositioning tasks',
+        steps: [
+          'Drag the body of a task card to move it — both start and end dates shift by the same amount.',
+          'Drag the left edge handle to adjust the start date only.',
+          'Drag the right edge handle to adjust the end date only.',
+          'A visual corridor shows the valid range during drag based on dependency constraints.',
+          'Tasks snap to time-axis tick marks and to other tasks\' dates while dragging.',
+        ],
+      },
+      {
+        title: 'Adjusting task dates by dragging',
+        steps: [
+          'While dragging, ghost cards and alignment lines preview the projected position.',
+          'Related tasks with free (non-fixed) dates cascade automatically as you drag.',
+          'Release to confirm; all affected tasks are saved automatically.',
+        ],
+      },
+    ],
+  },
+  {
+    id: 'undo-redo',
+    title: 'Undo / Redo',
+    subsections: [
+      {
+        title: 'Undoing and redoing changes',
+        steps: [
+          'Press Ctrl+Z (Cmd+Z on Mac) to undo the last action.',
+          'Press Ctrl+Y (Cmd+Shift+Z on Mac) to redo a previously undone action.',
+          'Undo and redo buttons are also available in the graph view toolbar.',
+          'Supported actions include task position drags and task detail edits (title, dates, assignee, and more).',
+          'History is session-scoped — it resets when you reload the page.',
+        ],
+      },
     ],
   },
   {
