@@ -165,7 +165,7 @@ export function TaskDetailPanel({
   )
 
   return (
-    <div className={styles.panel} data-testid="task-detail-panel">
+    <div className={styles.panel} data-testid="task-detail-panel" onClick={e => e.stopPropagation()}>
       <div className={styles.header}>
         <h3 className={styles.headerTitle}>Task Detail</h3>
         <button className={styles.closeBtn} onClick={onClose} aria-label="Close detail panel">✕</button>
@@ -180,6 +180,7 @@ export function TaskDetailPanel({
             value={title}
             onChange={e => { setTitle(e.target.value); markDirty() }}
             required
+            data-testid="task-title-input"
           />
         </div>
 

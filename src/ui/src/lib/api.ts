@@ -18,7 +18,9 @@ api.interceptors.request.use(config => {
 api.interceptors.response.use(
   res => res,
   err => {
-    if (err.response?.status === 401) {
+    if (err.response?.status === 401 && localStorage.getItem(TOKEN_KEY)) {
+      // Only treat as session expiry when we had a token — unauthenticated requests
+      // (e.g. wrong login credentials) should propagate as regular errors instead.
       window.dispatchEvent(new CustomEvent('auth:unauthorized'))
       return new Promise(() => {}) // suppress further error handling
     }

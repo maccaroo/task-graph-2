@@ -15,6 +15,11 @@ public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
 {
     private const int MinPasswordLength = 8;
 
+    // Configurable work factor — lower values (e.g. 4) speed up E2E/test environments
+    // where BCrypt's default (11) is too slow due to CPU constraints.
+    private int BcryptWorkFactor =>
+        int.TryParse(config["BCrypt:WorkFactor"], out var wf) ? wf : 11;
+
     public async Task<LoginResponse> RegisterAsync(RegisterRequest request)
     {
         ValidateNotEmpty(request.Username, nameof(request.Username));
@@ -37,7 +42,7 @@ public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
             FirstName = request.FirstName,
             LastName = request.LastName,
             Email = request.Email,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password)
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: BcryptWorkFactor)
         };
 
         db.Users.Add(user);
@@ -94,7 +99,7 @@ public class AuthService(AppDbContext db, IConfiguration config) : IAuthService
 
         ValidatePassword(request.NewPassword);
 
-        token.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+        token.User.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: BcryptWorkFactor);
         db.PasswordResetTokens.Remove(token);
         await db.SaveChangesAsync();
     }

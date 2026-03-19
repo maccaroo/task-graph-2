@@ -204,7 +204,7 @@ public class TaskService(AppDbContext db, INotificationService notificationServi
         };
 
         if (violation is not null)
-            throw new ValidationException(violation);
+            throw new ConstraintViolationException(violation);
     }
 
     public async Task DeletePredecessorAsync(Guid taskId, Guid predecessorId)

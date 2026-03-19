@@ -186,8 +186,8 @@
 [x] T7 - Tests: computeCascadeUpdates for all four relationship types × fixed/free anchor combinations
 
 ## P21 - End-to-End Testing
-[ ] T1 - E2E: user registration and login flow
-[ ] T2 - E2E: create, edit, and delete a task
-[ ] T3 - E2E: add and remove task dependencies with constraint validation
-[ ] T4 - E2E: task graph drag-and-drop repositioning
-[ ] T5 - E2E: real-time notification delivery via WebSocket
+[x] T1 - E2E: user registration and login flow
+[x] T2 - E2E: create, edit, and delete a task
+[x] T3 - E2E: add and remove task dependencies with constraint validation
+[x] T4 - E2E: task graph drag-and-drop repositioning
+[x] T5 - E2E: real-time notification delivery via WebSocket

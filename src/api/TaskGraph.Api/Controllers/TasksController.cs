@@ -49,6 +49,7 @@ public class TasksController(ITaskService taskService) : ControllerBase
             return Ok(task);
         }
         catch (ValidationException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (ConstraintViolationException ex) { return UnprocessableEntity(new { error = ex.Message }); }
         catch (NotFoundException ex) { return NotFound(new { error = ex.Message }); }
     }
 
@@ -72,6 +73,7 @@ public class TasksController(ITaskService taskService) : ControllerBase
             return Ok(task);
         }
         catch (ValidationException ex) { return BadRequest(new { error = ex.Message }); }
+        catch (ConstraintViolationException ex) { return UnprocessableEntity(new { error = ex.Message }); }
         catch (NotFoundException ex) { return NotFound(new { error = ex.Message }); }
         catch (ConflictException ex) { return Conflict(new { error = ex.Message }); }
     }

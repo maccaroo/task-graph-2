@@ -439,7 +439,7 @@ public class TaskServiceTests
         var predecessor = await SeedTask(db, "Predecessor",
             endType: TimingType.Fixed, endDate: now.AddDays(3));
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.Exclusive));
     }
 
@@ -453,7 +453,7 @@ public class TaskServiceTests
         var predecessor = await SeedTask(db, "Predecessor",
             startType: TimingType.Fixed, startDate: now.AddDays(3));
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HaveStarted));
     }
 
@@ -467,7 +467,7 @@ public class TaskServiceTests
         var predecessor = await SeedTask(db, "Predecessor",
             endType: TimingType.Fixed, endDate: now.AddDays(4));
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HaveCompleted));
     }
 
@@ -481,7 +481,7 @@ public class TaskServiceTests
         var predecessor = await SeedTask(db, "Predecessor",
             startType: TimingType.Fixed, startDate: now.AddDays(4));
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.AddPredecessorAsync(task.Id, predecessor.Id, RelationshipType.HandOff));
     }
 
@@ -554,7 +554,7 @@ public class TaskServiceTests
         await SeedRelationship(db, task.Id, pred.Id, RelationshipType.Exclusive);
 
         // Move task start before pred end — violates Exclusive
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.UpdateAsync(task.Id, MakeUpdateRequest(
                 startType: TimingType.Fixed, startDate: now.AddDays(3))));
     }
@@ -584,7 +584,7 @@ public class TaskServiceTests
         var task = await SeedTask(db, "Task", startType: TimingType.Fixed, startDate: now.AddDays(7));
         await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HaveStarted);
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.UpdateAsync(task.Id, MakeUpdateRequest(
                 startType: TimingType.Fixed, startDate: now.AddDays(3))));
     }
@@ -598,7 +598,7 @@ public class TaskServiceTests
         var task = await SeedTask(db, "Task", endType: TimingType.Fixed, endDate: now.AddDays(12));
         await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HaveCompleted);
 
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.UpdateAsync(task.Id, MakeUpdateRequest(
                 endType: TimingType.Fixed, endDate: now.AddDays(8))));
     }
@@ -613,7 +613,7 @@ public class TaskServiceTests
         await SeedRelationship(db, task.Id, pred.Id, RelationshipType.HandOff);
 
         // Move task end before pred start — violates HandOff
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.UpdateAsync(task.Id, MakeUpdateRequest(
                 endType: TimingType.Fixed, endDate: now.AddDays(8))));
     }
@@ -629,7 +629,7 @@ public class TaskServiceTests
         await SeedRelationship(db, task.Id, pred.Id, RelationshipType.Exclusive);
 
         // Move pred end past task start — violates Exclusive from the successor side
-        await Assert.ThrowsAsync<ValidationException>(() =>
+        await Assert.ThrowsAsync<ConstraintViolationException>(() =>
             service.UpdateAsync(pred.Id, MakeUpdateRequest(
                 endType: TimingType.Fixed, endDate: now.AddDays(7))));
     }
