@@ -247,10 +247,15 @@
   transition: background var(--transition-fast), color var(--transition-fast);
 }
 
-.iconBtn:hover {
+.iconBtn:hover:not(:disabled) {
   background: var(--color-primary-subtle);
   color: var(--color-primary);
   border-color: var(--color-primary);
+}
+
+.iconBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .iconBtnActive {

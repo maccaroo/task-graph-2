@@ -4,6 +4,7 @@ import {
   deleteTask,
   removePredecessor,
   updateTask,
+  type CreateTaskData,
   type Task,
   type TaskStatus,
   type TimingType,
@@ -20,6 +21,7 @@ interface TaskDetailPanelProps {
   onUpdated: () => void
   onDeleted: (id: string) => void
   onSelectTask: (id: string) => void
+  onTaskSaved?: (taskId: string, before: CreateTaskData, after: CreateTaskData) => void
   autoSaveDelayMs?: number
 }
 
@@ -35,6 +37,7 @@ export function TaskDetailPanel({
   onUpdated,
   onDeleted,
   onSelectTask,
+  onTaskSaved,
   autoSaveDelayMs = 2000,
 }: TaskDetailPanelProps) {
   const [title, setTitle] = useState('')
@@ -57,6 +60,8 @@ export function TaskDetailPanel({
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Keep a stable ref to the current task id for use inside async callbacks
   const taskIdRef = useRef<string | null>(null)
+  // Tracks the last persisted state so each save can record an accurate before/after diff
+  const lastSavedRef = useRef<CreateTaskData | null>(null)
 
   // Sync form state only when the selected task changes (not on re-render after save)
   useEffect(() => {
@@ -77,6 +82,19 @@ export function TaskDetailPanel({
     setAddPredId('')
     setConfirmDelete(false)
     setDeleteError('')
+    lastSavedRef.current = {
+      title: task.title,
+      description: task.description ?? undefined,
+      assigneeId: task.assigneeId ?? undefined,
+      status: task.status,
+      priority: task.priority,
+      tags: task.tags,
+      startType: task.startType,
+      startDate: task.startDate ?? undefined,
+      endType: task.endType,
+      endDate: task.endDate ?? undefined,
+      duration: task.duration ?? undefined,
+    }
   }, [task?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Auto-save debounce — fires whenever any field or dirty flag changes
@@ -95,21 +113,25 @@ export function TaskDetailPanel({
     if (!id || !title.trim()) return
     setSaving(true)
     setSaveError('')
+    const after: CreateTaskData = {
+      title: title.trim(),
+      description: description.trim() || undefined,
+      assigneeId: assigneeId || undefined,
+      status,
+      // priority and tags are not editable in this panel — read from current task
+      priority: task!.priority,
+      tags: task!.tags,
+      startType,
+      startDate: startType !== 'None' && startDate ? startDate : undefined,
+      endType,
+      endDate: endType !== 'None' && endDate ? endDate : undefined,
+      duration: duration.trim() || undefined,
+    }
     try {
-      await updateTask(id, {
-        title: title.trim(),
-        description: description.trim() || undefined,
-        assigneeId: assigneeId || undefined,
-        status,
-        // priority and tags are not editable in this panel — read from current task
-        priority: task!.priority,
-        tags: task!.tags,
-        startType,
-        startDate: startType !== 'None' && startDate ? startDate : undefined,
-        endType,
-        endDate: endType !== 'None' && endDate ? endDate : undefined,
-        duration: duration.trim() || undefined,
-      })
+      await updateTask(id, after)
+      const before = lastSavedRef.current
+      lastSavedRef.current = after
+      if (before) onTaskSaved?.(id, before, after)
       setDirty(false)
       onUpdated()
     } catch (err) {

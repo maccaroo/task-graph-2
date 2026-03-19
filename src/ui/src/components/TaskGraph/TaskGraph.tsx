@@ -4,6 +4,7 @@ import {
   getTasks,
   removePredecessor,
   updateTask,
+  type CreateTaskData,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -39,6 +40,9 @@ import { resolveRelationship } from './TaskGraph.utils'
 import { snapDate } from './dragSnap'
 import { computeMovementCorridor, clampMoveDelta, clampResizePx, computeCascadeUpdates, type CascadeUpdate } from './dragConstraints'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { useCommandHistory } from '../../hooks/useCommandHistory'
+import { positionCommand } from '../../lib/commands/PositionCommand'
+import { updateTaskCommand } from '../../lib/commands/UpdateTaskCommand'
 import { GraphMiniMap } from './GraphMiniMap'
 import styles from './TaskGraph.module.css'
 
@@ -100,6 +104,21 @@ interface ResizeDrag {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
+function taskToData(t: Task): CreateTaskData {
+  return {
+    title: t.title,
+    description: t.description ?? undefined,
+    assigneeId: t.assigneeId ?? undefined,
+    status: t.status,
+    priority: t.priority,
+    tags: t.tags,
+    startType: t.startType,
+    startDate: t.startDate ?? undefined,
+    endType: t.endType,
+    endDate: t.endDate ?? undefined,
+  }
+}
+
 function applyFilters(tasks: Task[], filters: Filters): Task[] {
   return tasks.filter(t => {
     if (filters.text) {
@@ -154,6 +173,8 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
   const [containerHeight, setContainerHeight] = useState(0)
+
+  const { push: pushCommand, undo: undoCommand, redo: redoCommand, canUndo, canRedo } = useCommandHistory()
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
@@ -729,22 +750,29 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
       ? new Date(new Date(task.endDate).getTime() + deltaMs).toISOString()
       : undefined
 
-    try {
-      await updateTask(task.id, {
-        title: task.title,
-        description: task.description ?? undefined,
-        assigneeId: task.assigneeId ?? undefined,
-        status: task.status,
-        priority: task.priority,
-        tags: task.tags,
-        startType: task.startType,
-        startDate: newStartDate,
-        endType: task.endType,
-        endDate: newEndDate,
+    // Snapshot before/after for undo/redo
+    const taskBefore = taskToData(task)
+    const taskAfter: CreateTaskData = { ...taskBefore, startDate: newStartDate, endDate: newEndDate }
+    const cascadeBefore = new Map<string, CreateTaskData>()
+    const cascadeAfter  = new Map<string, CreateTaskData>()
+    const toDate = (px: number) => vert ? yToDate(px, vs, ppd).toISOString() : xToDate(px, vs, ppd).toISOString()
+    for (const [relId, update] of cascadeUpdates) {
+      const rel = tasksRef.current.find(t => t.id === relId)
+      if (!rel) continue
+      cascadeBefore.set(relId, taskToData(rel))
+      cascadeAfter.set(relId, {
+        ...taskToData(rel),
+        startDate: update.startPx !== undefined ? toDate(update.startPx) : (rel.startDate ?? undefined),
+        endDate:   update.endPx   !== undefined ? toDate(update.endPx)   : (rel.endDate   ?? undefined),
       })
+    }
+
+    try {
+      await updateTask(task.id, taskAfter)
     } catch { /* ignore — reload will revert */ }
 
     await commitCascade(cascadeUpdates, ppd, vs, vert)
+    pushCommand(positionCommand(task.id, taskBefore, taskAfter, cascadeBefore, cascadeAfter))
     await load()
   }
 
@@ -865,22 +893,33 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
     const newDateIso = newDate.toISOString()
 
-    try {
-      await updateTask(task.id, {
-        title: task.title,
-        description: task.description ?? undefined,
-        assigneeId: task.assigneeId ?? undefined,
-        status: task.status,
-        priority: task.priority,
-        tags: task.tags,
-        startType: task.startType,
-        startDate: anchor === 'start' ? newDateIso : (task.startDate ?? undefined),
-        endType: task.endType,
-        endDate: anchor === 'end' ? newDateIso : (task.endDate ?? undefined),
+    // Snapshot before/after for undo/redo
+    const taskBefore = taskToData(task)
+    const taskAfter: CreateTaskData = {
+      ...taskBefore,
+      startDate: anchor === 'start' ? newDateIso : (task.startDate ?? undefined),
+      endDate:   anchor === 'end'   ? newDateIso : (task.endDate   ?? undefined),
+    }
+    const cascadeBefore = new Map<string, CreateTaskData>()
+    const cascadeAfter  = new Map<string, CreateTaskData>()
+    const toDate = (px: number) => vert ? yToDate(px, vs, ppd).toISOString() : xToDate(px, vs, ppd).toISOString()
+    for (const [relId, update] of cascadeUpdates) {
+      const rel = tasksRef.current.find(t => t.id === relId)
+      if (!rel) continue
+      cascadeBefore.set(relId, taskToData(rel))
+      cascadeAfter.set(relId, {
+        ...taskToData(rel),
+        startDate: update.startPx !== undefined ? toDate(update.startPx) : (rel.startDate ?? undefined),
+        endDate:   update.endPx   !== undefined ? toDate(update.endPx)   : (rel.endDate   ?? undefined),
       })
+    }
+
+    try {
+      await updateTask(task.id, taskAfter)
     } catch { /* ignore — reload will revert */ }
 
     await commitCascade(cascadeUpdates, ppd, vs, vert)
+    pushCommand(positionCommand(task.id, taskBefore, taskAfter, cascadeBefore, cascadeAfter))
     await load()
   }
 
@@ -900,6 +939,34 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, vertical])
+
+  // ── Undo / Redo ───────────────────────────────────────────────────────────
+
+  const handleUndo = useCallback(async () => {
+    await undoCommand()
+    await load()
+  }, [undoCommand]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRedo = useCallback(async () => {
+    await redoCommand()
+    await load()
+  }, [redoCommand]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const mod = e.metaKey || e.ctrlKey
+      if (!mod) return
+      if (!e.shiftKey && e.key === 'z') { e.preventDefault(); void handleUndo() }
+      if ( e.shiftKey && e.key === 'z') { e.preventDefault(); void handleRedo() }
+      if (!e.shiftKey && e.key === 'y') { e.preventDefault(); void handleRedo() }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [handleUndo, handleRedo])
+
+  function handleTaskSaved(taskId: string, before: CreateTaskData, after: CreateTaskData) {
+    pushCommand(updateTaskCommand(taskId, before, after))
+  }
 
   // ── Filters ───────────────────────────────────────────────────────────────
 
@@ -1207,6 +1274,8 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
       <div className={styles.actionPanel}>
         <div className={styles.actionLeft}>
+          <button className={styles.iconBtn} onClick={() => { void handleUndo() }} disabled={!canUndo} title="Undo (Ctrl+Z)">↩ Undo</button>
+          <button className={styles.iconBtn} onClick={() => { void handleRedo() }} disabled={!canRedo} title="Redo (Ctrl+Y)">↪ Redo</button>
           <div className={styles.zoomControls}>
             <button className={styles.zoomBtn} onClick={() => zoomTo(pixelsPerDay / 1.5)}
               title="Zoom out" aria-label="Zoom out">−</button>
@@ -1247,6 +1316,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
         onUpdated={load}
         onDeleted={() => { setSelectedTaskId(null); void load() }}
         onSelectTask={setSelectedTaskId}
+        onTaskSaved={handleTaskSaved}
         autoSaveDelayMs={config ? config.autoSaveDelaySeconds * 1000 : 2000}
       />
     </div>

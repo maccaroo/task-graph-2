@@ -203,9 +203,8 @@
 [x] T3 - Click/drag on the mini-map to pan the graph viewport
 
 ## P26 - Undo / Redo
-[ ] T1 - Define command interface (execute / undo) and session-scoped command-history stacks
-[ ] T2 - Implement commands for zoom and pan actions
-[ ] T3 - Implement commands for task-position drag
-[ ] T4 - Implement commands for task-detail modifications (title, dates, assignee, etc.)
-[ ] T5 - Add undo/redo keyboard shortcuts (Ctrl+Z / Ctrl+Y) and toolbar buttons
-[ ] T6 - Unit tests: command-stack behaviour and all command types
+[x] T1 - Define command interface (execute / undo) and session-scoped command-history stacks
+[x] T3 - Implement commands for task-position drag
+[x] T4 - Implement commands for task-detail modifications (title, dates, assignee, etc.)
+[x] T5 - Add undo/redo keyboard shortcuts (Ctrl+Z / Ctrl+Y) and toolbar buttons
+[x] T6 - Unit tests: command-stack behaviour and all command types

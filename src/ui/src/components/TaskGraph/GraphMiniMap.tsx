@@ -39,7 +39,7 @@ interface GraphMiniMapProps {
  * pans the main viewport to the corresponding position.
  */
 export function GraphMiniMap({
-  canvasWidth, canvasHeight, containerRef, vertical: _vertical, positions, tasks,
+  canvasWidth, canvasHeight, containerRef, positions, tasks,
 }: GraphMiniMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 

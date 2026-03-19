@@ -85,6 +85,23 @@ A floating overlay in the bottom-right corner of the graph canvas shows the enti
 - **Visibility**: Always visible when the graph is loaded (no toggle required).
 
 
+### Undo / Redo
+
+Session-scoped undo and redo for user actions. History is held in memory only and cleared on page reload.
+
+**Supported operations:**
+- Task-position drag (move and resize), including cascade updates to related tasks
+- Task-detail modifications (title, description, assignee, status, dates, duration)
+
+**Keyboard shortcuts:**
+- Undo: `Ctrl+Z` (or `Cmd+Z` on macOS)
+- Redo: `Ctrl+Y` or `Ctrl+Shift+Z` (or `Cmd+Shift+Z` on macOS)
+
+**Toolbar buttons:**
+- Undo and Redo buttons appear in the action panel (left side, alongside zoom controls).
+- Each button is disabled when the respective stack is empty.
+
+
 ### Zoom Behaviour
 The graph supports two zoom input methods, both adjusting `pixelsPerDay` (pixels per day on the time axis):
 
