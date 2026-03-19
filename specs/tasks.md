@@ -191,3 +191,21 @@
 [x] T3 - E2E: add and remove task dependencies with constraint validation
 [x] T4 - E2E: task graph drag-and-drop repositioning
 [x] T5 - E2E: real-time notification delivery via WebSocket
+
+## P24 - Graph Zoom Controls
+[ ] T1 - Add zoom in/out buttons and a slider to the graph view toolbar
+[ ] T2 - Support mouse-wheel zoom on the graph canvas
+[ ] T3 - Restrict zoom-out to at most 20% beyond the end-to-end span of the graph
+
+## P25 - Graph Mini-Map
+[ ] T1 - Build mini-map overlay showing the full graph extent at reduced scale
+[ ] T2 - Highlight the currently visible viewport region on the mini-map
+[ ] T3 - Click/drag on the mini-map to pan the graph viewport
+
+## P26 - Undo / Redo
+[ ] T1 - Define command interface (execute / undo) and session-scoped command-history stacks
+[ ] T2 - Implement commands for zoom and pan actions
+[ ] T3 - Implement commands for task-position drag
+[ ] T4 - Implement commands for task-detail modifications (title, dates, assignee, etc.)
+[ ] T5 - Add undo/redo keyboard shortcuts (Ctrl+Z / Ctrl+Y) and toolbar buttons
+[ ] T6 - Unit tests: command-stack behaviour and all command types
