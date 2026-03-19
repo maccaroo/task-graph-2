@@ -88,7 +88,7 @@ jobs:
 
       - name: Install Playwright browsers
         working-directory: src/e2e
-        run: npx playwright install --with-deps chromium
+        run: npm run install:browsers
 
       - name: Start E2E stack
         run: docker compose -f infrastructure/docker-compose.e2e.yml up -d --build
@@ -104,10 +104,10 @@ jobs:
 
       - name: Run Playwright tests
         working-directory: src/e2e
-        run: npx playwright test
+        run: npm test
         env:
           BASE_URL: http://localhost:3001
-          API_URL: http://localhost:5001
+          API_URL: http://localhost:5501
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4
