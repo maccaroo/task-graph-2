@@ -39,6 +39,7 @@ import { resolveRelationship } from './TaskGraph.utils'
 import { snapDate } from './dragSnap'
 import { computeMovementCorridor, clampMoveDelta, clampResizePx, computeCascadeUpdates, type CascadeUpdate } from './dragConstraints'
 import { useCurrentUser } from '../../hooks/useCurrentUser'
+import { GraphMiniMap } from './GraphMiniMap'
 import styles from './TaskGraph.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -1007,8 +1008,9 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
         </div>
       )}
 
-      <div ref={containerRef} className={styles.canvasContainer}>
-        <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
+      <div className={styles.graphWrapper}>
+        <div ref={containerRef} className={styles.canvasContainer}>
+          <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
           {(axisPos === 'top' || axisPos === 'left') && timeAxisEl}
 
           <div className={vertical ? styles.weekBandV : styles.weekBand} style={weekBand} aria-hidden="true" />
@@ -1192,6 +1194,15 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
           {(axisPos === 'bottom' || axisPos === 'right') && timeAxisEl}
         </div>
+        </div>
+        <GraphMiniMap
+          canvasWidth={canvasWidth}
+          canvasHeight={canvasHeight}
+          containerRef={containerRef}
+          vertical={vertical}
+          positions={positions}
+          tasks={filtered}
+        />
       </div>
 
       <div className={styles.actionPanel}>

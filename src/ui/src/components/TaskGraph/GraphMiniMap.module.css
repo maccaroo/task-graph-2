@@ -1,0 +1,16 @@
+.miniMap {
+  position: absolute;
+  bottom: var(--space-3);
+  right: var(--space-3);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  z-index: 30;
+  pointer-events: auto;
+}
+
+.canvas {
+  display: block;
+  cursor: crosshair;
+}

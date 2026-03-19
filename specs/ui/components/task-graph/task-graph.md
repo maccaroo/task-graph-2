@@ -72,6 +72,19 @@ It contains buttons for:
   - Reset zoom button (returns to the default zoom level)
 
 
+### Mini-Map
+A floating overlay in the bottom-right corner of the graph canvas shows the entire graph extent at a reduced scale, helping users navigate large graphs.
+
+- **Scale**: The mini-map renders the full time span (viewStart → viewEnd) and full cross-axis extent (all rows/lanes) compressed into a fixed 200 × 120 px thumbnail.
+- **Task items**: Each visible task is drawn as a small coloured rectangle at its scaled canvas position, using the same due-status colour as in the main graph.
+- **Viewport indicator**: A semi-transparent rectangle highlights the currently visible portion of the graph canvas. It updates in real time as the user scrolls or zooms.
+- **Navigation**:
+  - Clicking anywhere on the mini-map centres the viewport on that point.
+  - Dragging on the mini-map pans the viewport continuously.
+- **Position**: Fixed to the bottom-right corner of the canvas container (inside the scrollable area's visible frame, not scrolled with the canvas), with a small margin from the edges.
+- **Visibility**: Always visible when the graph is loaded (no toggle required).
+
+
 ### Zoom Behaviour
 The graph supports two zoom input methods, both adjusting `pixelsPerDay` (pixels per day on the time axis):
 

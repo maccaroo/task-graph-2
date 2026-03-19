@@ -198,9 +198,9 @@
 [x] T3 - Restrict zoom-out to at most 20% beyond the end-to-end span of the graph
 
 ## P25 - Graph Mini-Map
-[ ] T1 - Build mini-map overlay showing the full graph extent at reduced scale
-[ ] T2 - Highlight the currently visible viewport region on the mini-map
-[ ] T3 - Click/drag on the mini-map to pan the graph viewport
+[x] T1 - Build mini-map overlay showing the full graph extent at reduced scale
+[x] T2 - Highlight the currently visible viewport region on the mini-map
+[x] T3 - Click/drag on the mini-map to pan the graph viewport
 
 ## P26 - Undo / Redo
 [ ] T1 - Define command interface (execute / undo) and session-scoped command-history stacks
