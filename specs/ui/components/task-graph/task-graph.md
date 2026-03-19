@@ -65,3 +65,19 @@ An action panel is present at the bottom of the graph panel.
 It contains buttons for:
 - Add task
 - Toggle open-ended tasks (show/hide tasks with no timing constraints)
+- Zoom controls (left side of the panel):
+  - Zoom out button (−)
+  - Zoom slider (maps the zoom range logarithmically so small and large zoom levels are equally accessible)
+  - Zoom in button (+)
+  - Reset zoom button (returns to the default zoom level)
+
+
+### Zoom Behaviour
+The graph supports two zoom input methods, both adjusting `pixelsPerDay` (pixels per day on the time axis):
+
+- **Buttons / slider**: Zoom in/out buttons step by ×1.5. The slider maps the full zoom range logarithmically.
+- **Mouse-wheel**: Scrolling on the canvas zooms in or out by ×1.15 per step, centred on the mouse position.
+
+**Zoom limits**:
+- *Maximum zoom-in*: fixed at 200 px/day.
+- *Minimum zoom-out*: dynamic — at most 20% of empty space beyond each end of the span of all tasks with dates. Falls back to 0.3 px/day when no tasks have dates.

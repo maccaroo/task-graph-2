@@ -152,6 +152,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   const vertical = config?.timeAxisDirection === 'Vertical'
   const containerRef = useRef<HTMLDivElement>(null)
   const [containerWidth, setContainerWidth] = useState(0)
+  const [containerHeight, setContainerHeight] = useState(0)
 
   const [tasks, setTasks] = useState<Task[]>([])
   const [users, setUsers] = useState<UserSummary[]>([])
@@ -195,6 +196,31 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   useEffect(() => { pixelsPerDayRef.current = pixelsPerDay }, [pixelsPerDay])
   useEffect(() => { verticalRef.current = vertical }, [vertical])
 
+  // ── Dynamic min-zoom (T3) ─────────────────────────────────────────────────
+  // Clamp zoom-out so at most 20% of empty space appears beyond each end of span.
+  const computedMinZoom = useMemo(() => {
+    const dates: number[] = []
+    for (const t of tasks) {
+      if (t.startDate) dates.push(new Date(t.startDate).getTime())
+      if (t.endDate) dates.push(new Date(t.endDate).getTime())
+    }
+    if (dates.length < 2) return MIN_ZOOM
+    const spanMs = Math.max(...dates) - Math.min(...dates)
+    if (spanMs <= 0) return MIN_ZOOM
+    const spanDays = spanMs / MS_PER_DAY
+    const viewSize = vertical ? containerHeight : containerWidth
+    if (viewSize <= 0) return MIN_ZOOM
+    return Math.max(MIN_ZOOM, viewSize / (spanDays * 1.4))
+  }, [tasks, containerWidth, containerHeight, vertical])
+
+  const computedMinZoomRef = useRef(computedMinZoom)
+  useEffect(() => { computedMinZoomRef.current = computedMinZoom }, [computedMinZoom])
+
+  // Clamp current zoom when the dynamic minimum rises (e.g. after tasks are removed)
+  useEffect(() => {
+    if (pixelsPerDay < computedMinZoom) setPixelsPerDay(computedMinZoom)
+  }, [computedMinZoom]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const load = useCallback(async () => {
     setError('')
     try {
@@ -215,7 +241,10 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
-    const ro = new ResizeObserver(entries => setContainerWidth(entries[0].contentRect.width))
+    const ro = new ResizeObserver(entries => {
+      setContainerWidth(entries[0].contentRect.width)
+      setContainerHeight(entries[0].contentRect.height)
+    })
     ro.observe(el)
     return () => ro.disconnect()
   }, [loading])
@@ -422,29 +451,68 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
   // ── Zoom ──────────────────────────────────────────────────────────────────
 
-  function handleWheel(e: React.WheelEvent) {
-    if (!e.ctrlKey && !e.metaKey) return
-    e.preventDefault()
+  // Non-passive wheel listener so preventDefault() actually suppresses scroll.
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    function handler(e: WheelEvent) {
+      const container = containerRef.current
+      if (!container) return
+      e.preventDefault()
+      const ppd = pixelsPerDayRef.current
+      const minZ = computedMinZoomRef.current
+      const newZoom = Math.min(MAX_ZOOM, Math.max(minZ, ppd * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
+      setPixelsPerDay(newZoom)
+      const rect = container.getBoundingClientRect()
+      if (verticalRef.current) {
+        const mouseY = e.clientY - rect.top + container.scrollTop
+        const dateAtMouse = yToDate(mouseY, viewStartRef.current, ppd)
+        requestAnimationFrame(() => {
+          if (containerRef.current) containerRef.current.scrollTop = dateToY(dateAtMouse, viewStartRef.current, newZoom) - (e.clientY - rect.top)
+        })
+      } else {
+        const mouseX = e.clientX - rect.left + container.scrollLeft
+        const dateAtMouse = xToDate(mouseX, viewStartRef.current, ppd)
+        requestAnimationFrame(() => {
+          if (containerRef.current) containerRef.current.scrollLeft = dateToX(dateAtMouse, viewStartRef.current, newZoom) - (e.clientX - rect.left)
+        })
+      }
+    }
+    el.addEventListener('wheel', handler, { passive: false })
+    return () => el.removeEventListener('wheel', handler)
+  }, [loading]) // re-register once container is mounted
+
+  // Zoom to a target level, keeping the viewport centred on the current midpoint.
+  function zoomTo(target: number) {
+    const newZoom = Math.min(MAX_ZOOM, Math.max(computedMinZoom, target))
     const container = containerRef.current
-    if (!container) return
-    const rect = container.getBoundingClientRect()
-    const newZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pixelsPerDay * (e.deltaY < 0 ? 1.15 : 1 / 1.15)))
-    setPixelsPerDay(newZoom)
+    if (!container) { setPixelsPerDay(newZoom); return }
     if (vertical) {
-      const mouseY = e.clientY - rect.top + container.scrollTop
-      const dateAtMouse = yToDate(mouseY, viewStart, pixelsPerDay)
+      const centerY = container.scrollTop + container.clientHeight / 2
+      const dateAtCenter = yToDate(centerY, viewStart, pixelsPerDay)
+      setPixelsPerDay(newZoom)
       requestAnimationFrame(() => {
         if (!containerRef.current) return
-        containerRef.current.scrollTop = dateToY(dateAtMouse, viewStart, newZoom) - (e.clientY - rect.top)
+        containerRef.current.scrollTop = dateToY(dateAtCenter, viewStart, newZoom) - containerRef.current.clientHeight / 2
       })
     } else {
-      const mouseX = e.clientX - rect.left + container.scrollLeft
-      const dateAtMouse = xToDate(mouseX, viewStart, pixelsPerDay)
+      const centerX = container.scrollLeft + container.clientWidth / 2
+      const dateAtCenter = xToDate(centerX, viewStart, pixelsPerDay)
+      setPixelsPerDay(newZoom)
       requestAnimationFrame(() => {
         if (!containerRef.current) return
-        containerRef.current.scrollLeft = dateToX(dateAtMouse, viewStart, newZoom) - (e.clientX - rect.left)
+        containerRef.current.scrollLeft = dateToX(dateAtCenter, viewStart, newZoom) - containerRef.current.clientWidth / 2
       })
     }
+  }
+
+  // Logarithmic slider helpers: maps [computedMinZoom, MAX_ZOOM] ↔ [0, 100].
+  const sliderValue = Math.max(0, Math.min(100,
+    computedMinZoom >= MAX_ZOOM ? 100
+      : 100 * Math.log(pixelsPerDay / computedMinZoom) / Math.log(MAX_ZOOM / computedMinZoom),
+  ))
+  function sliderToZoom(val: number): number {
+    return computedMinZoom * Math.pow(MAX_ZOOM / computedMinZoom, val / 100)
   }
 
   // ── Pan ───────────────────────────────────────────────────────────────────
@@ -939,7 +1007,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
         </div>
       )}
 
-      <div ref={containerRef} className={styles.canvasContainer} onWheel={handleWheel}>
+      <div ref={containerRef} className={styles.canvasContainer}>
         <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
           {(axisPos === 'top' || axisPos === 'left') && timeAxisEl}
 
@@ -1128,6 +1196,21 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
       <div className={styles.actionPanel}>
         <div className={styles.actionLeft}>
+          <div className={styles.zoomControls}>
+            <button className={styles.zoomBtn} onClick={() => zoomTo(pixelsPerDay / 1.5)}
+              title="Zoom out" aria-label="Zoom out">−</button>
+            <input
+              type="range" className={styles.zoomSlider}
+              min={0} max={100} step={0.5}
+              value={sliderValue}
+              onChange={e => zoomTo(sliderToZoom(parseFloat(e.target.value)))}
+              aria-label="Zoom level"
+            />
+            <button className={styles.zoomBtn} onClick={() => zoomTo(pixelsPerDay * 1.5)}
+              title="Zoom in" aria-label="Zoom in">+</button>
+            <button className={styles.zoomBtn} onClick={() => zoomTo(DEFAULT_ZOOM)}
+              title="Reset zoom" aria-label="Reset zoom">↺</button>
+          </div>
           <button className={`${styles.iconBtn} ${filtersOpen ? styles.iconBtnActive : ''}`}
             onClick={() => setFiltersOpen(v => !v)} aria-expanded={filtersOpen} title="Toggle filters">
             Filters {activeFilterCount > 0 && <span className={styles.badge}>{activeFilterCount}</span>}

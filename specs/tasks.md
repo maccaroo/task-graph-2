@@ -193,9 +193,9 @@
 [x] T7 - Tests: computeCascadeUpdates for all four relationship types × fixed/free anchor combinations
 
 ## P24 - Graph Zoom Controls
-[ ] T1 - Add zoom in/out buttons and a slider to the graph view toolbar
-[ ] T2 - Support mouse-wheel zoom on the graph canvas
-[ ] T3 - Restrict zoom-out to at most 20% beyond the end-to-end span of the graph
+[x] T1 - Add zoom in/out buttons and a slider to the graph view toolbar
+[x] T2 - Support mouse-wheel zoom on the graph canvas
+[x] T3 - Restrict zoom-out to at most 20% beyond the end-to-end span of the graph
 
 ## P25 - Graph Mini-Map
 [ ] T1 - Build mini-map overlay showing the full graph extent at reduced scale
