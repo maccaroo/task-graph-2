@@ -162,6 +162,13 @@
 ## P20b - Avatar Persistence
 [x] T1 - Mount Docker volume for avatar storage so uploads persist across redeployments
 
+## P21 - End-to-End Testing
+[x] T1 - E2E: user registration and login flow
+[x] T2 - E2E: create, edit, and delete a task
+[x] T3 - E2E: add and remove task dependencies with constraint validation
+[x] T4 - E2E: task graph drag-and-drop repositioning
+[x] T5 - E2E: real-time notification delivery via WebSocket
+
 ## P22 - Task Date Manipulation via Drag
 [x] T1 - Snap utility: given a pixel position, resolve nearest snap target (time axis tick or other task's start/end date)
 [x] T2 - Constraint bounds utility: given a task and operation (move/resize-start/resize-end), compute the valid movement corridor from all relationship constraints
@@ -184,13 +191,6 @@
 [x] T5 - On drop, save cascaded anchor dates via API for each affected task
 [x] T6 - Tests: naturalAnchorPx for all anchor/task combinations
 [x] T7 - Tests: computeCascadeUpdates for all four relationship types × fixed/free anchor combinations
-
-## P21 - End-to-End Testing
-[x] T1 - E2E: user registration and login flow
-[x] T2 - E2E: create, edit, and delete a task
-[x] T3 - E2E: add and remove task dependencies with constraint validation
-[x] T4 - E2E: task graph drag-and-drop repositioning
-[x] T5 - E2E: real-time notification delivery via WebSocket
 
 ## P24 - Graph Zoom Controls
 [ ] T1 - Add zoom in/out buttons and a slider to the graph view toolbar
