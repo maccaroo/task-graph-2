@@ -3,7 +3,10 @@ set -euo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 
-echo "--- Running API unit tests ---"
+echo "--- Running API tests before push ---"
 dotnet test "$REPO_ROOT/src/api/TaskGraph.sln" --nologo -v quiet
-echo "--- Running UI unit tests ---"
+
+echo "--- Running UI tests before push ---"
 (cd "$REPO_ROOT/src/ui" && npm run test)
+
+echo "All pre-push checks passed!"
