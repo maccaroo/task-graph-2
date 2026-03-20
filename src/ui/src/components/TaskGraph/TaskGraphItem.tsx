@@ -263,7 +263,7 @@ export function TaskGraphItem({
 
       {/* ── Horizontal info bar: absolutely positioned at card bottom, full card width ── */}
       {/* Pred at start edge, due status centred (normal cards only), succ at end edge  */}
-      {!isReduced && !vertical && (
+      {(!isReduced || hoverExpanded) && !vertical && (
         <div className={styles.info}>
           <span className={styles.infoPred}>
             {task.predecessorIds.length > 0 ? `← ${task.predecessorIds.length}` : ''}
