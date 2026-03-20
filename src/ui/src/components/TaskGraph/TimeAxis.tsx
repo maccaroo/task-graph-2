@@ -9,7 +9,7 @@ interface Tick {
   major: boolean
 }
 
-interface PeriodBand {
+export interface PeriodBand {
   x: number
   width: number
   label: string
@@ -24,7 +24,7 @@ const BAND_CLASS: Partial<Record<DueStatusKey, string>> = {
   'upcoming':  styles.bandUpcoming,
 }
 
-function computePeriodBands(
+export function computePeriodBands(
   viewStart: Date,
   pixelsPerDay: number,
   canvasWidth: number,

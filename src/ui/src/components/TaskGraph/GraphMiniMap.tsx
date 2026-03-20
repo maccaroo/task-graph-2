@@ -2,7 +2,8 @@ import { useCallback, useEffect, useRef } from 'react'
 import type { Task } from '../../services/tasks'
 import { computeDueStatus, type DueStatusKey } from '../../utils/taskStatus'
 import type { TaskPosition } from './graphLayout'
-import { CARD_HEIGHT } from './graphLayout'
+import { CARD_HEIGHT, dateToX, dateToY } from './graphLayout'
+import { computePeriodBands } from './TimeAxis'
 import styles from './GraphMiniMap.module.css'
 
 const MAP_W = 200
@@ -19,6 +20,15 @@ const STATUS_COLOR: Record<DueStatusKey, string> = {
   'completed': '#a16207',
 }
 
+// Alpha for period band strips in mini-map (faint, on dark background)
+const BAND_ALPHA: Partial<Record<DueStatusKey, number>> = {
+  'critical':  0.22,
+  'overdue':   0.20,
+  'due-today': 0.22,
+  'due-soon':  0.18,
+  'upcoming':  0.14,
+}
+
 interface GraphMiniMapProps {
   /** Full canvas dimensions (px). */
   canvasWidth: number
@@ -31,6 +41,10 @@ interface GraphMiniMapProps {
   positions: Map<string, TaskPosition>
   /** Tasks (for status/colour lookup). */
   tasks: Task[]
+  /** Graph view start date (for period bands and now-line positioning). */
+  viewStart: Date
+  /** Pixels per day zoom level (for period bands and now-line positioning). */
+  pixelsPerDay: number
 }
 
 /**
@@ -39,7 +53,7 @@ interface GraphMiniMapProps {
  * pans the main viewport to the corresponding position.
  */
 export function GraphMiniMap({
-  canvasWidth, canvasHeight, containerRef, positions, tasks,
+  canvasWidth, canvasHeight, containerRef, vertical, positions, tasks, viewStart, pixelsPerDay,
 }: GraphMiniMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -60,6 +74,29 @@ export function GraphMiniMap({
     // Background
     ctx.fillStyle = 'rgba(20, 20, 30, 0.82)'
     ctx.fillRect(0, 0, MAP_W, MAP_H)
+
+    // Period bands — faint coloured strips along the time axis
+    const canvasAxisSize = vertical ? canvasHeight : canvasWidth
+    const bands = computePeriodBands(viewStart, pixelsPerDay, canvasAxisSize)
+    for (const band of bands) {
+      const alpha = BAND_ALPHA[band.statusKey] ?? 0
+      if (alpha === 0) continue
+      const color = STATUS_COLOR[band.statusKey]
+      ctx.fillStyle = color
+      ctx.globalAlpha = alpha
+      if (vertical) {
+        // Time runs top-to-bottom: bands are horizontal strips
+        const by = band.x * scaleY
+        const bh = band.width * scaleY
+        ctx.fillRect(0, by, MAP_W, bh)
+      } else {
+        // Time runs left-to-right: bands are vertical strips
+        const bx = band.x * scaleX
+        const bw = band.width * scaleX
+        ctx.fillRect(bx, 0, bw, MAP_H)
+      }
+      ctx.globalAlpha = 1
+    }
 
     // Task cards — draw before viewport shading so they show through
     const taskMap = new Map(tasks.map(t => [t.id, t]))
@@ -103,7 +140,35 @@ export function GraphMiniMap({
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)'
     ctx.lineWidth = 1.5
     ctx.strokeRect(vpX, vpY, vpW, vpH)
-  }, [canvasWidth, canvasHeight, scaleX, scaleY, containerRef, positions, tasks])
+
+    // Current-time indicator line
+    const now = new Date()
+    if (vertical) {
+      const nowY = dateToY(now, viewStart, pixelsPerDay) * scaleY
+      if (nowY >= 0 && nowY <= MAP_H) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.70)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([3, 2])
+        ctx.beginPath()
+        ctx.moveTo(0, nowY)
+        ctx.lineTo(MAP_W, nowY)
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+    } else {
+      const nowX = dateToX(now, viewStart, pixelsPerDay) * scaleX
+      if (nowX >= 0 && nowX <= MAP_W) {
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.70)'
+        ctx.lineWidth = 1
+        ctx.setLineDash([3, 2])
+        ctx.beginPath()
+        ctx.moveTo(nowX, 0)
+        ctx.lineTo(nowX, MAP_H)
+        ctx.stroke()
+        ctx.setLineDash([])
+      }
+    }
+  }, [canvasWidth, canvasHeight, scaleX, scaleY, containerRef, positions, tasks, viewStart, pixelsPerDay, vertical])
 
   // Redraw whenever the container scrolls or resizes
   useEffect(() => {

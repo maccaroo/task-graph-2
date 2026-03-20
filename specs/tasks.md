@@ -231,9 +231,9 @@
 [x] T2 - Toggle updates the graph immediately and persists the choice to user configuration
 
 ## P34 - Mini-Map Visual Polish
-[ ] T1 - Add styled frame to mini-map (border, rounded corners, semi-transparent background)
-[ ] T2 - Render period bands as faint coloured strips in the mini-map background
-[ ] T3 - Render current-time indicator line on the mini-map
+[x] T1 - Add styled frame to mini-map (border, rounded corners, semi-transparent background)
+[x] T2 - Render period bands as faint coloured strips in the mini-map background
+[x] T3 - Render current-time indicator line on the mini-map
 
 ## P35 - Settings UI Layout
 [ ] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level

@@ -1270,6 +1270,8 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
           vertical={vertical}
           positions={positions}
           tasks={filtered}
+          viewStart={viewStart}
+          pixelsPerDay={pixelsPerDay}
         />
       </div>
 
