@@ -35,6 +35,7 @@ interface TaskGraphItemProps {
 
 // ── Helpers ───────────────────────────────────────────────────────────────
 
+
 function getTimeLabel(task: Task): string | null {
   if (task.status === 'Complete') return null
   if (!task.endDate) return null
@@ -164,18 +165,23 @@ export function TaskGraphItem({
 
   const classNames = [
     styles.card,
-    isGradient           ? styles.gradient    : '',
     selected             ? styles.selected    : '',
     isDragTarget         ? styles.dragTarget  : '',
     isDragging           ? styles.dragging    : '',
+    isReduced            ? styles.reduced     : '',
+    hoverExpanded        ? styles.expanded    : '',
+  ].filter(Boolean).join(' ')
+
+  // .cardBg: visual background + borders + gradient border pseudo-elements.
+  const cardBgClassNames = [
+    styles.cardBg,
+    isGradient ? styles.gradient : '',
     vertical
       ? (hasStartConstraint ? styles.constrainedStartV   : styles.unconstrainedStartV)
       : (hasStartConstraint ? styles.constrainedStart    : styles.unconstrainedStart),
     vertical
       ? (hasEndConstraint   ? styles.constrainedEndV     : styles.unconstrainedEndV)
       : (hasEndConstraint   ? styles.constrainedEnd      : styles.unconstrainedEnd),
-    isReduced            ? styles.reduced     : '',
-    hoverExpanded        ? styles.expanded    : '',
   ].filter(Boolean).join(' ')
 
   // For wide both-constrained cards, content is standard width and centred,
@@ -196,6 +202,19 @@ export function TaskGraphItem({
       aria-pressed={selected}
       onKeyDown={handleKeyDown}
     >
+      {/* ── Background layer: card surface, solid borders, gradient border. ── */}
+      <div className={cardBgClassNames} aria-hidden="true" />
+
+      {/* ── Wake: gradient strip extending past unconstrained edges along the
+           time axis only. Clamped to the card's minor-axis extent so it does
+           not bleed into adjacent lanes. ── */}
+      {!hasStartConstraint && (
+        <div className={vertical ? styles.wakeStartV : styles.wakeStart} aria-hidden="true" />
+      )}
+      {!hasEndConstraint && (
+        <div className={vertical ? styles.wakeEndV : styles.wakeEnd} aria-hidden="true" />
+      )}
+
       {/* ── Start anchor widget (relation drag) ── */}
       <div
         className={vertical ? styles.widgetStartV : styles.widgetStart}
@@ -237,6 +256,7 @@ export function TaskGraphItem({
           aria-label="Drag to resize end date"
         />
       )}
+
 
       {/* ── Card content ── */}
       <div className={showWideContent ? styles.wideContent : styles.content}>

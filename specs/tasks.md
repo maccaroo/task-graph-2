@@ -239,5 +239,5 @@
 [x] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level
 
 ## P36 - Task Item Open-End Fade-Out
-[ ] T1 - Replace dashed border on unconstrained sides with a gradient fade-out overlay
-[ ] T2 - Ensure fade-out does not obscure task title or info section
+[x] T1 - Replace dashed border on unconstrained sides with a gradient fade-out overlay
+[x] T2 - Ensure fade-out does not obscure task title or info section

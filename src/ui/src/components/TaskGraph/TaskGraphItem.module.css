@@ -5,7 +5,7 @@
   display: flex;
   align-items: stretch;
   gap: 0;
-  background: var(--color-surface-raised);
+  /* No background here — .cardBg child provides it. */
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-md);
   cursor: grab;
@@ -15,6 +15,20 @@
   overflow: visible;
   height: 52px;
   box-sizing: border-box;
+}
+
+/* ── Background layer ─────────────────────────────── */
+
+/* Sits behind all content.  Carries the card surface colour, constraint
+   borders, and the gradient border pseudo-elements.  mask-image is applied
+   to this element via inline style so text and widgets above are unaffected. */
+.cardBg {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-raised);
+  z-index: 0;
+  pointer-events: none;
 }
 
 .card:hover {
@@ -64,43 +78,23 @@
   border-bottom: 2px solid var(--end-color, var(--color-border));
 }
 
-/* When both sides constrained, top/bottom already set; just ensure right overrides top/bottom */
+/* When both sides constrained, ensure both caps are full width */
 .constrainedStart.constrainedEnd {
   border-left-width: 4px;
   border-right-width: 4px;
 }
 
-/* Soft buffer: dashed faded border on an unconstrained side — never overlaps content */
+/* Unconstrained sides: thin solid border — wake div handles the fade-out glow */
 .unconstrainedStart {
-  border-left: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
-  border-top: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
-  border-bottom: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
+  border-top: 2px solid var(--start-color, var(--color-border));
+  border-bottom: 2px solid var(--start-color, var(--color-border));
+  border-left: 2px solid var(--start-color, var(--color-border));
 }
 
 .unconstrainedEnd {
-  border-right: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
-  border-top: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-  border-bottom: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-}
-
-/* When both unconstrained, top/bottom set twice — last declaration wins, keep thinner */
-.unconstrainedStart.unconstrainedEnd {
-  border-top: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-  border-bottom: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-}
-
-/* Mixed: constrained start takes priority for top/bottom */
-.constrainedStart.unconstrainedEnd {
-  border-top: 2px solid var(--start-color, var(--color-border));
-  border-bottom: 2px solid var(--start-color, var(--color-border));
-  border-right: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
-}
-
-/* Mixed: constrained end takes priority for top/bottom */
-.unconstrainedStart.constrainedEnd {
   border-top: 2px solid var(--end-color, var(--color-border));
   border-bottom: 2px solid var(--end-color, var(--color-border));
-  border-left: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
+  border-right: 2px solid var(--end-color, var(--color-border));
 }
 
 /* ── Vertical mode constrained/unconstrained buffers ─ */
@@ -123,33 +117,71 @@
   border-bottom-width: 4px;
 }
 
+/* Unconstrained vertical sides: thin solid border — wake div handles the fade-out glow */
 .unconstrainedStartV {
-  border-top: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
-  border-left: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
-  border-right: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
+  border-left: 2px solid var(--start-color, var(--color-border));
+  border-right: 2px solid var(--start-color, var(--color-border));
+  border-top: 2px solid var(--start-color, var(--color-border));
 }
 
 .unconstrainedEndV {
-  border-bottom: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
-  border-left: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-  border-right: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-}
-
-.unconstrainedStartV.unconstrainedEndV {
-  border-left: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-  border-right: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
-}
-
-.constrainedStartV.unconstrainedEndV {
-  border-left: 2px solid var(--start-color, var(--color-border));
-  border-right: 2px solid var(--start-color, var(--color-border));
-  border-bottom: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
-}
-
-.unconstrainedStartV.constrainedEndV {
   border-left: 2px solid var(--end-color, var(--color-border));
   border-right: 2px solid var(--end-color, var(--color-border));
-  border-top: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
+  border-bottom: 2px solid var(--end-color, var(--color-border));
+}
+
+/* ── Wake divs for unconstrained sides ───────────────
+ *
+ * Absolutely-positioned divs extending past the card edge along the time axis.
+ * Each fades from the status border colour to transparent.  top/bottom (or
+ * left/right in vertical mode) are clamped to 0 so the wake never bleeds into
+ * adjacent lanes.
+ */
+
+/* Horizontal wakes */
+.wakeStart {
+  position: absolute;
+  right: calc(100% - 6px); /* starts 6px inside the card so gradient blends into the border */
+  top: 0;
+  bottom: 0;
+  width: 86px;
+  background: linear-gradient(to left, var(--start-color, var(--color-border)), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wakeEnd {
+  position: absolute;
+  left: calc(100% - 6px); /* starts 6px inside the card */
+  top: 0;
+  bottom: 0;
+  width: 86px;
+  background: linear-gradient(to right, var(--end-color, var(--color-border)), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Vertical wakes */
+.wakeStartV {
+  position: absolute;
+  bottom: calc(100% - 6px); /* starts 6px inside the card */
+  left: 0;
+  right: 0;
+  height: 86px;
+  background: linear-gradient(to top, var(--start-color, var(--color-border)), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.wakeEndV {
+  position: absolute;
+  top: calc(100% - 6px); /* starts 6px inside the card */
+  left: 0;
+  right: 0;
+  height: 86px;
+  background: linear-gradient(to bottom, var(--end-color, var(--color-border)), transparent);
+  pointer-events: none;
+  z-index: 1;
 }
 
 /* ── Selection & drag-target states ───────────────── */
@@ -187,6 +219,8 @@
   width: 100%;
   min-width: 0;
   overflow: hidden;
+  position: relative;
+  z-index: 1; /* above .cardBg (z-index: 0) */
 }
 
 /* Wide content (both-constrained, span ≥ CARD_WIDTH):
@@ -202,6 +236,7 @@
   position: sticky;
   left: 4px;   /* stay inside the card's border */
   overflow: hidden;
+  z-index: 1; /* above .cardBg (z-index: 0) */
 }
 
 /* ── Title ────────────────────────────────────────── */
@@ -230,6 +265,7 @@
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   pointer-events: none;
+  z-index: 1; /* above .cardBg (z-index: 0) */
 }
 
 .infoPred {

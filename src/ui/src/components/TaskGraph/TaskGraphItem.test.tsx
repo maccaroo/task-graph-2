@@ -147,6 +147,11 @@ describe('TaskGraphItem', () => {
 })
 
 describe('hybrid gradient border (T6)', () => {
+  // gradient/constraint classes live on the .cardBg child (first child of .card)
+  function getCardBg(container: HTMLElement): Element | null {
+    return (container.firstChild as Element)?.firstElementChild ?? null
+  }
+
   it('applies gradient class when startDate and endDate span different time periods', () => {
     // startDate close (due-soon/green), endDate far in future (upcoming/blue)
     const soonStart   = new Date(Date.now() +  5 * 86_400_000).toISOString()
@@ -159,7 +164,7 @@ describe('hybrid gradient border (T6)', () => {
         onCardDragAttempt={vi.fn()} onResizeDragStart={vi.fn()} />,
     )
     // CSS modules hash class names — check className contains "gradient"
-    expect((container.firstChild as Element)?.className).toMatch(/gradient/)
+    expect(getCardBg(container)?.className).toMatch(/gradient/)
   })
 
   it('does NOT apply gradient when start and end share the same period', () => {
@@ -172,31 +177,71 @@ describe('hybrid gradient border (T6)', () => {
         onSelect={vi.fn()} onRelationDragStart={vi.fn()}
         onCardDragAttempt={vi.fn()} onResizeDragStart={vi.fn()} />,
     )
-    expect((container.firstChild as Element)?.className).not.toMatch(/gradient/)
+    expect(getCardBg(container)?.className).not.toMatch(/gradient/)
   })
 })
 
 describe('constraint buffer styling (T7)', () => {
+  // constraint classes live on the .cardBg child (first child of .card)
+  function getCardBg(container: HTMLElement): Element | null {
+    return (container.firstChild as Element)?.firstElementChild ?? null
+  }
+
   it('applies constrainedStart when startDate is set', () => {
     const task = makeTask({ startDate: new Date(Date.now()).toISOString(), startType: 'Fixed' })
     const { container } = renderItem(task)
-    expect((container.firstChild as Element)?.className).toMatch(/constrainedStart/)
+    expect(getCardBg(container)?.className).toMatch(/constrainedStart/)
   })
 
   it('applies unconstrainedStart when startDate is not set', () => {
     const { container } = renderItem(BASE)
-    expect((container.firstChild as Element)?.className).toMatch(/unconstrainedStart/)
+    expect(getCardBg(container)?.className).toMatch(/unconstrainedStart/)
   })
 
   it('applies constrainedEnd when endDate is set', () => {
     const { container } = renderItem(BASE) // BASE has endDate
-    expect((container.firstChild as Element)?.className).toMatch(/constrainedEnd/)
+    expect(getCardBg(container)?.className).toMatch(/constrainedEnd/)
   })
 
   it('applies unconstrainedEnd when endDate is not set', () => {
     const task = makeTask({ endDate: null, endType: 'None' })
     const { container } = renderItem(task)
-    expect((container.firstChild as Element)?.className).toMatch(/unconstrainedEnd/)
+    expect(getCardBg(container)?.className).toMatch(/unconstrainedEnd/)
+  })
+})
+
+describe('wake divs for unconstrained sides (P36)', () => {
+  // Wake divs are direct children of .card with a CSS-module class containing "wake"
+  function getWakeClasses(container: HTMLElement): string[] {
+    const card = container.firstChild as HTMLElement
+    return Array.from(card.children)
+      .map(el => el.className)
+      .filter(cn => /wake/i.test(cn))
+  }
+
+  it('renders a start wake when start is unconstrained', () => {
+    const { container } = renderItem(BASE) // BASE has no startDate
+    expect(getWakeClasses(container).some(cn => /wakeStart/i.test(cn))).toBe(true)
+  })
+
+  it('renders no wake elements when both sides are constrained', () => {
+    const task = makeTask({ startDate: new Date().toISOString(), startType: 'Fixed' })
+    const { container } = renderItem(task) // task also has endDate from BASE
+    expect(getWakeClasses(container)).toHaveLength(0)
+  })
+
+  it('renders an end wake when end is unconstrained', () => {
+    const task = makeTask({ endDate: null, endType: 'None' })
+    const { container } = renderItem(task)
+    expect(getWakeClasses(container).some(cn => /wakeEnd/i.test(cn))).toBe(true)
+  })
+
+  it('renders both start and end wakes when neither side is constrained', () => {
+    const task = makeTask({ startDate: null, startType: 'None', endDate: null, endType: 'None' })
+    const { container } = renderItem(task)
+    const wakes = getWakeClasses(container)
+    expect(wakes.some(cn => /wakeStart/i.test(cn))).toBe(true)
+    expect(wakes.some(cn => /wakeEnd/i.test(cn))).toBe(true)
   })
 })
 
