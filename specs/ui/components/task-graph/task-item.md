@@ -50,8 +50,8 @@ Task items are positioned and sized based on their timing constraints.
 ### Constrained/Unconstrained Sides
 Each side (start side and end side) indicates whether it is constrained. "Start" and "end" refer to the backward and forward ends along the time axis respectively — in horizontal mode these are left/right; in vertical mode these are top/bottom.
 
-- **Constrained side** (has a date): displayed with a solid buffer (sharp, solid edge cap)
-- **Unconstrained side** (no date): displayed with a soft buffer (gradient fade-out edge)
+- **Constrained side** (has a date): displayed with a solid coloured border cap on that edge
+- **Unconstrained side** (no date): displayed with a fade-out effect — a gradient overlay on that edge blends the card into the background. The gradient must not obscure the task title or info section; it is confined to the edge region of the card away from the content.
 
 ### Placement Rules
 **One side constrained** — card uses the standard major-axis size:

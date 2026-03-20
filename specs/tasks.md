@@ -221,6 +221,22 @@
 [x] T3 - Fix constrained/unconstrained border styling in vertical mode: start → top edge, end → bottom edge
 [x] T4 - Fix time axis tick labels in vertical mode: always horizontal, wrap long text, must not affect axis width
 
+## P30 - Graph Layout Direction Toggle
+[ ] T1 - Add horizontal/vertical layout direction toggle button to the action panel
+[ ] T2 - Toggle updates the graph immediately and persists the choice to user configuration
+
+## P31 - Mini-Map Visual Polish
+[ ] T1 - Add styled frame to mini-map (border, rounded corners, semi-transparent background)
+[ ] T2 - Render period bands as faint coloured strips in the mini-map background
+[ ] T3 - Render current-time indicator line on the mini-map
+
+## P32 - Settings UI Layout
+[ ] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level
+
+## P33 - Task Item Open-End Fade-Out
+[ ] T1 - Replace dashed border on unconstrained sides with a gradient fade-out overlay
+[ ] T2 - Ensure fade-out does not obscure task title or info section
+
 ## P27 - Task Graph Layout Fixes
 [x] T1 - Fix relationship widget placement: widgets must always point forwards or backwards relative to the time axis
 [x] T2 - Fix vertical layout task width: match the aspect ratio of tasks in horizontal layout

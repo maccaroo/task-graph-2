@@ -68,6 +68,7 @@ An action panel is present at the bottom of the graph panel.
 It contains buttons for:
 - Add task
 - Toggle open-ended tasks (show/hide tasks with no timing constraints)
+- Layout direction toggle — switches the time axis between Horizontal and Vertical mode; updates the graph immediately and persists the choice to user configuration
 - Zoom controls (left side of the panel):
   - Zoom out button (−)
   - Zoom slider (maps the zoom range logarithmically so small and large zoom levels are equally accessible)
@@ -86,6 +87,7 @@ A floating overlay in the bottom-right corner of the graph canvas shows the enti
   - Dragging on the mini-map pans the viewport continuously.
 - **Position**: Fixed to the bottom-right corner of the canvas container (inside the scrollable area's visible frame, not scrolled with the canvas), with a small margin from the edges.
 - **Visibility**: Always visible when the graph is loaded (no toggle required).
+- **Visual style**: The mini-map has a distinct visual frame — a subtle border, rounded corners, and a semi-transparent background — so it reads as a floating overlay rather than a plain rectangle. Period bands from the time axis are reflected as faint coloured strips in the mini-map background. The current-time indicator line is rendered across the mini-map at the correct scaled position.
 
 
 ### Undo / Redo
