@@ -32,6 +32,8 @@ Each band spans the region of the axis for its time period, and shows the period
 ## Ticks
 Only major ticks display date labels to avoid crowding.  Minor ticks are shown as short tick lines only.
 
+Tick labels are always rendered horizontally (never rotated), in both horizontal and vertical axis orientations. Long labels wrap rather than overflow the axis. Labels must not affect the axis width or height — the axis size is fixed regardless of label content.
+
 ## Style
 The time axis should be visually distinct from the task items, but within the overall design of the graph.
 

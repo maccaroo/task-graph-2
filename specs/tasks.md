@@ -208,3 +208,20 @@
 [x] T4 - Implement commands for task-detail modifications (title, dates, assignee, etc.)
 [x] T5 - Add undo/redo keyboard shortcuts (Ctrl+Z / Ctrl+Y) and toolbar buttons
 [x] T6 - Unit tests: command-stack behaviour and all command types
+
+## P29 - Task Item Info Layout
+[x] T1 - Title always at top; info section (due status + pred/succ counts) always at bottom
+[x] T2 - Horizontal: info bar absolutely positioned spanning full card width so pred/succ reach the physical card edges
+[x] T3 - Vertical: info section as two rows (due status row 1; pred left + succ right row 2)
+[x] T4 - Vertical reduced display: hide info section when both-constrained card height < 2 × standard minor-axis (104 px); hover-expand to full height after 500 ms
+
+## P28 - Vertical View Fixes
+[x] T1 - Increase vertical task minor-axis (card width) to 2× standard minor-axis (104 px); expand lanes to fill available viewport width
+[x] T2 - Show info section in vertical mode as two rows: due status label on row 1, relationship counters on row 2
+[x] T3 - Fix constrained/unconstrained border styling in vertical mode: start → top edge, end → bottom edge
+[x] T4 - Fix time axis tick labels in vertical mode: always horizontal, wrap long text, must not affect axis width
+
+## P27 - Task Graph Layout Fixes
+[x] T1 - Fix relationship widget placement: widgets must always point forwards or backwards relative to the time axis
+[x] T2 - Fix vertical layout task width: match the aspect ratio of tasks in horizontal layout
+[x] T3 - Fix relationship widget interaction: add a gap between widget and task edge; remove grow-on-hover behaviour

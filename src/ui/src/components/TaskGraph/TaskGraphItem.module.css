@@ -103,6 +103,55 @@
   border-left: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
 }
 
+/* ── Vertical mode constrained/unconstrained buffers ─ */
+
+/* Start = top edge, end = bottom edge in vertical mode */
+.constrainedStartV {
+  border-top: 4px solid var(--start-color, var(--color-border));
+  border-left: 2px solid var(--start-color, var(--color-border));
+  border-right: 2px solid var(--start-color, var(--color-border));
+}
+
+.constrainedEndV {
+  border-bottom: 4px solid var(--end-color, var(--color-border));
+  border-left: 2px solid var(--end-color, var(--color-border));
+  border-right: 2px solid var(--end-color, var(--color-border));
+}
+
+.constrainedStartV.constrainedEndV {
+  border-top-width: 4px;
+  border-bottom-width: 4px;
+}
+
+.unconstrainedStartV {
+  border-top: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
+  border-left: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
+  border-right: 1px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 25%, transparent);
+}
+
+.unconstrainedEndV {
+  border-bottom: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
+  border-left: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
+  border-right: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
+}
+
+.unconstrainedStartV.unconstrainedEndV {
+  border-left: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
+  border-right: 1px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 25%, transparent);
+}
+
+.constrainedStartV.unconstrainedEndV {
+  border-left: 2px solid var(--start-color, var(--color-border));
+  border-right: 2px solid var(--start-color, var(--color-border));
+  border-bottom: 2px dashed color-mix(in srgb, var(--end-color, var(--color-border)) 45%, transparent);
+}
+
+.unconstrainedStartV.constrainedEndV {
+  border-left: 2px solid var(--end-color, var(--color-border));
+  border-right: 2px solid var(--end-color, var(--color-border));
+  border-top: 2px dashed color-mix(in srgb, var(--start-color, var(--color-border)) 45%, transparent);
+}
+
 /* ── Selection & drag-target states ───────────────── */
 
 .selected {
@@ -129,11 +178,11 @@
 
 /* ── Content wrapper ──────────────────────────────── */
 
-/* Standard content (single-constrained or open-ended) */
+/* Content: title at top, info row at bottom — same in both modes */
 .content {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  justify-content: space-between;
   padding: var(--space-1) var(--space-2);
   width: 100%;
   min-width: 0;
@@ -155,7 +204,7 @@
   overflow: hidden;
 }
 
-/* ── Title & meta ─────────────────────────────────── */
+/* ── Title ────────────────────────────────────────── */
 
 .title {
   font-size: var(--text-sm);
@@ -166,31 +215,62 @@
   text-overflow: ellipsis;
 }
 
-.meta {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+/* ── Horizontal info bar: absolutely positioned at card bottom ── */
+
+/* Spans the full physical card width so pred/succ reach start/end edges */
+.info {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
+  padding: 0 var(--space-2) var(--space-1);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+}
+
+.infoPred {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.infoTime {
+  text-align: center;
+  padding: 0 var(--space-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Only grow to fill horizontal space inside the info bar */
+.info .infoTime {
+  flex: 1;
+}
+
+.infoSucc {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Vertical info: two-row layout */
+.infoVertical {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
   font-size: var(--text-xs);
   color: var(--color-text-secondary);
   white-space: nowrap;
+  margin: 0 calc(-1 * var(--space-2));
 }
 
-.metaLeft {
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.infoRow {
+  display: flex;
+  justify-content: space-between;
 }
 
-.metaCenter {
-  text-align: center;
-  padding: 0 var(--space-1);
-}
-
-.metaRight {
-  text-align: right;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 
 /* ── Dragging state ───────────────────────────────── */
 
@@ -256,15 +336,14 @@
   opacity: 1 !important;
 }
 
-/* ── Relation drag widgets (T4, T5) ───────────────── */
+/* ── Relation drag widgets ────────────────────────── */
 
+/* Shared visual styles */
 .widgetStart,
-.widgetEnd {
+.widgetEnd,
+.widgetStartV,
+.widgetEndV {
   position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 18px;
-  height: 42px;
   background: var(--color-surface);
   border: 2px solid var(--color-border-strong);
   cursor: crosshair;
@@ -276,29 +355,62 @@
   color: var(--color-text-secondary);
   opacity: 0;
   transition: opacity var(--transition-fast), background var(--transition-fast),
-    border-color var(--transition-fast), transform var(--transition-fast);
+    border-color var(--transition-fast), color var(--transition-fast);
   pointer-events: all;
 }
 
+/* Horizontal variants: point backwards/forwards along the horizontal time axis */
+.widgetStart,
+.widgetEnd {
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 42px;
+}
+
 .widgetStart {
-  left: -24px;
+  left: -30px;
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
 .widgetEnd {
-  right: -24px;
+  right: -30px;
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
+/* Vertical variants: point backwards/forwards along the vertical time axis */
+.widgetStartV,
+.widgetEndV {
+  left: 50%;
+  transform: translateX(-50%);
+  width: 42px;
+  height: 18px;
+}
+
+.widgetStartV {
+  top: -30px;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+}
+
+.widgetEndV {
+  bottom: -30px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+/* Reveal on card hover */
 .card:hover .widgetStart,
-.card:hover .widgetEnd {
+.card:hover .widgetEnd,
+.card:hover .widgetStartV,
+.card:hover .widgetEndV {
   opacity: 1;
 }
 
+/* Highlight on direct hover — no grow */
 .widgetStart:hover,
-.widgetEnd:hover {
+.widgetEnd:hover,
+.widgetStartV:hover,
+.widgetEndV:hover {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: var(--color-text-inverse);
-  transform: translateY(-50%) scale(1.25);
 }

@@ -319,32 +319,16 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     return Math.floor((Math.max(...ys) - CANVAS_PAD_Y) / ROW_HEIGHT) + 1
   }, [autoPositions, vertical])
 
-  const effectiveColWidth = useMemo(() => {
-    if (!vertical || !containerWidth) return COL_WIDTH
-    return Math.max(COL_WIDTH, Math.floor((containerWidth - AXIS_SIZE) / Math.max(numRows, 1)))
-  }, [vertical, containerWidth, numRows])
-
   const { width: canvasWidth, height: canvasHeight } = useMemo(() => {
     if (vertical) {
       const { height } = computeCanvasSizeVertical(viewStart, viewEnd, pixelsPerDay, numRows)
-      return { width: AXIS_SIZE + Math.max(numRows, 1) * effectiveColWidth, height }
+      const lanesWidth = AXIS_SIZE + Math.max(numRows, 1) * COL_WIDTH
+      return { width: Math.max(lanesWidth, containerWidth || 0), height }
     }
     return computeCanvasSize(viewStart, viewEnd, pixelsPerDay, numRows)
-  }, [viewStart, viewEnd, pixelsPerDay, numRows, vertical, effectiveColWidth])
+  }, [viewStart, viewEnd, pixelsPerDay, numRows, vertical, containerWidth])
 
-  const positions = useMemo(() => {
-    if (!vertical || effectiveColWidth === COL_WIDTH) return autoPositions
-    const result = new Map<string, TaskPosition>()
-    for (const [id, pos] of autoPositions) {
-      const colIndex = Math.round((pos.x - AXIS_SIZE) / COL_WIDTH)
-      result.set(id, {
-        ...pos,
-        x: AXIS_SIZE + colIndex * effectiveColWidth,
-        width: effectiveColWidth - (COL_WIDTH - CARD_WIDTH),
-      })
-    }
-    return result
-  }, [autoPositions, vertical, effectiveColWidth])
+  const positions = autoPositions
 
   useEffect(() => { positionsRef.current = positions }, [positions])
 

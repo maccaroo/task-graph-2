@@ -2,8 +2,10 @@ import type { Task } from '../../services/tasks'
 
 export const CARD_WIDTH = 180
 export const CARD_HEIGHT = 52
+export const CARD_WIDTH_V  = CARD_HEIGHT * 2 // = 104 — task minor-axis in vertical layout (2× for readable text)
+export const CARD_HEIGHT_V = CARD_WIDTH       // = 180 — task major-axis baseline in vertical layout
 export const ROW_HEIGHT = 64
-export const COL_WIDTH = 200   // lane width in vertical mode
+export const COL_WIDTH = CARD_WIDTH_V + 20   // = 124 — lane width in vertical mode
 export const CANVAS_PAD_X = 280
 export const CANVAS_PAD_Y = 72   // time axis height (56px) + 16px gap
 export const AXIS_SIZE = 72      // width of vertical time axis strip
@@ -179,11 +181,11 @@ export function computeAutoLayoutVertical(
       cardHeight = Math.max(endY - startY, CARD_HEIGHT)
     } else if (task.startDate) {
       cardTop    = dateToY(task.startDate, viewStart, pixelsPerDay)
-      cardHeight = CARD_HEIGHT
+      cardHeight = CARD_HEIGHT_V
     } else {
       const endY = task.endDate ? dateToY(task.endDate, viewStart, pixelsPerDay) : openEndedEndY
-      cardTop    = endY - CARD_HEIGHT
-      cardHeight = CARD_HEIGHT
+      cardTop    = endY - CARD_HEIGHT_V
+      cardHeight = CARD_HEIGHT_V
     }
 
     let col = 0
@@ -193,9 +195,7 @@ export function computeAutoLayoutVertical(
     positions.set(task.id, {
       x: AXIS_SIZE + col * COL_WIDTH,
       y: cardTop,
-      // Store card height in `width` field is misleading; use a dedicated field.
-      // For vertical mode callers read `height` off this position object.
-      width: CARD_WIDTH,
+      width: CARD_WIDTH_V,
       height: cardHeight,
     })
   }

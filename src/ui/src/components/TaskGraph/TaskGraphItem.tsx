@@ -5,7 +5,7 @@ import {
   computeDueStatusForDate,
   DUE_STATUS_COLOR_VAR,
 } from '../../utils/taskStatus'
-import { CARD_WIDTH, MS_PER_DAY } from './graphLayout'
+import { CARD_WIDTH, CARD_HEIGHT, CARD_HEIGHT_V, MS_PER_DAY } from './graphLayout'
 import styles from './TaskGraphItem.module.css'
 
 export type AnchorType = 'start' | 'end'
@@ -92,11 +92,14 @@ export function TaskGraphItem({
   const hasEndConstraint   = Boolean(task.endDate)
   const bothConstrained    = hasStartConstraint && hasEndConstraint
 
-  // A card is "reduced" when both sides are constrained but span < standard width
-  const isReduced = bothConstrained && width < CARD_WIDTH
+  // A card is "reduced" when both sides are constrained but span < standard size along the major axis
+  const isReduced  = !vertical && bothConstrained && width < CARD_WIDTH
+  // Hide info when the card is too short to show title + 2-row info comfortably (≈ 2 × standard card height)
+  const isReducedV =  vertical && bothConstrained && height !== undefined && height < CARD_HEIGHT * 2
 
-  // Effective rendered width: expand on hover if reduced
-  const effectiveWidth = isReduced && hoverExpanded ? CARD_WIDTH : width
+  // Effective rendered dimensions: expand on hover if reduced
+  const effectiveWidth  = isReduced  && hoverExpanded ? CARD_WIDTH   : width
+  const effectiveHeight = isReducedV && hoverExpanded ? CARD_HEIGHT_V : height
 
   // ── Card body mousedown — parent decides drag vs click ────────────────────
 
@@ -119,7 +122,7 @@ export function TaskGraphItem({
   // ── Hover expand (reduced cards only) ────────────────────────────────────
 
   function handleMouseEnter() {
-    if (!isReduced) return
+    if (!isReduced && !isReducedV) return
     hoverTimerRef.current = setTimeout(() => setHoverExpanded(true), HOVER_EXPAND_DELAY_MS)
   }
 
@@ -153,7 +156,7 @@ export function TaskGraphItem({
     left: x,
     top: y,
     width: effectiveWidth,
-    ...(height !== undefined ? { height } : {}),
+    ...(effectiveHeight !== undefined ? { height: effectiveHeight } : {}),
     '--start-color': startColor,
     '--end-color': endColor,
     '--status-color': DUE_STATUS_COLOR_VAR[dueStatus],
@@ -165,15 +168,20 @@ export function TaskGraphItem({
     selected             ? styles.selected    : '',
     isDragTarget         ? styles.dragTarget  : '',
     isDragging           ? styles.dragging    : '',
-    hasStartConstraint   ? styles.constrainedStart   : styles.unconstrainedStart,
-    hasEndConstraint     ? styles.constrainedEnd     : styles.unconstrainedEnd,
+    vertical
+      ? (hasStartConstraint ? styles.constrainedStartV   : styles.unconstrainedStartV)
+      : (hasStartConstraint ? styles.constrainedStart    : styles.unconstrainedStart),
+    vertical
+      ? (hasEndConstraint   ? styles.constrainedEndV     : styles.unconstrainedEndV)
+      : (hasEndConstraint   ? styles.constrainedEnd      : styles.unconstrainedEnd),
     isReduced            ? styles.reduced     : '',
     hoverExpanded        ? styles.expanded    : '',
   ].filter(Boolean).join(' ')
 
   // For wide both-constrained cards, content is standard width and centred,
   // but sticks to the visible portion when the card overflows the viewport.
-  const showWideContent = bothConstrained && width >= CARD_WIDTH
+  // Not applicable in vertical mode (width is fixed at CARD_WIDTH_V).
+  const showWideContent = !vertical && bothConstrained && width >= CARD_WIDTH
 
   return (
     <div
@@ -190,26 +198,26 @@ export function TaskGraphItem({
     >
       {/* ── Start anchor widget (relation drag) ── */}
       <div
-        className={styles.widgetStart}
+        className={vertical ? styles.widgetStartV : styles.widgetStart}
         title="Drag to create a relationship"
         onMouseDown={e => handleWidgetMouseDown(e, 'start')}
         aria-label="Start anchor"
         role="button"
         tabIndex={-1}
       >
-        ◀
+        {vertical ? '▲' : '◀'}
       </div>
 
       {/* ── End anchor widget (relation drag) ── */}
       <div
-        className={styles.widgetEnd}
+        className={vertical ? styles.widgetEndV : styles.widgetEnd}
         title="Drag to create a relationship"
         onMouseDown={e => handleWidgetMouseDown(e, 'end')}
         aria-label="End anchor"
         role="button"
         tabIndex={-1}
       >
-        ▶
+        {vertical ? '▼' : '▶'}
       </div>
 
       {/* ── Resize handles (date manipulation) — only on constrained sides ── */}
@@ -232,20 +240,40 @@ export function TaskGraphItem({
 
       {/* ── Card content ── */}
       <div className={showWideContent ? styles.wideContent : styles.content}>
+
+        {/* Title — always at the top */}
         <div className={styles.title} title={task.title}>{task.title}</div>
 
-        {!isReduced && (
-          <div className={styles.meta}>
-            <span className={styles.metaLeft}>
-              {task.predecessorIds.length > 0 && `← ${task.predecessorIds.length}`}
-            </span>
-            <span className={styles.metaCenter}>{timeLabel ?? ''}</span>
-            <span className={styles.metaRight}>
-              {task.successorIds.length > 0 && `${task.successorIds.length} →`}
-            </span>
+
+        {/* Vertical info: two rows — due status / pred left + succ right */}
+        {!isReduced && (!isReducedV || hoverExpanded) && vertical && (
+          <div className={styles.infoVertical}>
+            <span className={styles.infoTime}>{timeLabel ?? ''}</span>
+            <div className={styles.infoRow}>
+              <span className={styles.infoPred}>
+                {task.predecessorIds.length > 0 ? `← ${task.predecessorIds.length}` : ''}
+              </span>
+              <span className={styles.infoSucc}>
+                {task.successorIds.length > 0 ? `${task.successorIds.length} →` : ''}
+              </span>
+            </div>
           </div>
         )}
       </div>
+
+      {/* ── Horizontal info bar: absolutely positioned at card bottom, full card width ── */}
+      {/* Pred at start edge, due status centred (normal cards only), succ at end edge  */}
+      {!isReduced && !vertical && (
+        <div className={styles.info}>
+          <span className={styles.infoPred}>
+            {task.predecessorIds.length > 0 ? `← ${task.predecessorIds.length}` : ''}
+          </span>
+          <span className={styles.infoTime}>{timeLabel ?? ''}</span>
+          <span className={styles.infoSucc}>
+            {task.successorIds.length > 0 ? `${task.successorIds.length} →` : ''}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

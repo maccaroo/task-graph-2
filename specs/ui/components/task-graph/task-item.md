@@ -2,18 +2,28 @@
 Shows a succint view of a task within the graph.
 
 Contains the following:
-- Title
-- Status
-    - Task status affects the colour of the task title and border
-- A bottom info row with three slots:
-    - Left: predecessor count (e.g. `← 3`)
-    - Centre: due status label (e.g. `2d overdue`, `due today`, `5d left`)
-    - Right: successor count (e.g. `2 →`)
+- **Title** — always displayed at the **top** of the task item
+- **Due status label** — always displayed at the **bottom** of the task item
+- **Predecessor count indicator** (e.g. `← 3`) — at the **start (backward) edge** of the card
+- **Successor count indicator** (e.g. `3 →`) — at the **end (forward) edge** of the card
 
-Example bottom row: `← 3   2d overdue   2 →`
+### Horizontal mode layout
+The info section is absolutely positioned at the bottom of the card and spans the full physical card width:
+- Predecessor count at the left (start) edge
+- Due status label centred
+- Successor count at the right (end) edge
+
+For both-constrained cards wider than the standard major-axis size, the title is displayed in a sticky content box that remains in view when the card is scrolled horizontally. The info bar still spans the full physical card width.
+
+### Vertical mode layout
+The info section is displayed as two rows at the bottom of the card:
+- Row 1: due status label (centred)
+- Row 2: predecessor count on the left, successor count on the right
 
 ## Anchor widgets
-The task item is rendered with anchor widgets at the front and back.  These can be used create a relationship between one task and another by dragging an anchor widget from one task to the anchor widget of another.  Once a widget starts being dragged, only target widgets for valid relationships are visible.
+The task item is rendered with anchor widgets at the backward and forward ends relative to the time axis. In horizontal mode they sit on the left and right edges; in vertical mode they sit on the top and bottom edges. A clear gap separates each widget from the card edge. Widgets are highlighted on hover but do not grow in size.
+
+These can be used create a relationship between one task and another by dragging an anchor widget from one task to the anchor widget of another.  Once a widget starts being dragged, only target widgets for valid relationships are visible.
 
 When dragging an anchor widget to form a relationship, the earlier widget is always the predecessor, and the later widget is always the successor.  If the anchor widgets have the same date, then only an end to start relationship is valid, and the predecessor is always the end anchor's task, and the successor is always the start anchor's task. 
 
@@ -26,31 +36,37 @@ Validation:
 - Relationship anchor sequence: The predecessor anchor date cannot be after the successor anchor date.
 - No cycles: A task cannot be an predecessor or successor of itself
 
+## Dimensions
+
+Each task card has a **major axis** (aligned with the time axis) and a **minor axis** (perpendicular to it). In horizontal mode the major axis is horizontal; in vertical mode it is vertical.
+
+- **Standard major-axis size**: 180 px — used as the default card extent along the time axis for non-spanned tasks, and as the minimum height for spanned vertical tasks.
+- **Standard minor-axis size**: 52 px in horizontal mode; 104 px (2×) in vertical mode, to accommodate left-to-right readable text.
+
 ## Time Constraint Display
 
 Task items are positioned and sized based on their timing constraints.
 
-### Standard Content Width
-Task items have a standard content width, large enough to display all content elements succinctly.
-
 ### Constrained/Unconstrained Sides
-Each side (start side and end side) indicates whether it is constrained:
+Each side (start side and end side) indicates whether it is constrained. "Start" and "end" refer to the backward and forward ends along the time axis respectively — in horizontal mode these are left/right; in vertical mode these are top/bottom.
+
 - **Constrained side** (has a date): displayed with a solid buffer (sharp, solid edge cap)
 - **Unconstrained side** (no date): displayed with a soft buffer (gradient fade-out edge)
 
 ### Placement Rules
-**One side constrained** — card uses the standard content width:
+**One side constrained** — card uses the standard major-axis size:
 - Only end date set: end side of card aligns to the end date
 - Only start date set: start side of card aligns to the start date
 
-**Both sides constrained** — card spans from start date to end date:
-- If the span ≥ standard content width:
-  - Content is displayed at the standard width, centred within the span
+**Both sides constrained** — card spans from start date to end date along the major axis:
+- If the span ≥ standard major-axis size:
+  - Content is displayed at the standard size, centred within the span
   - If the card is partially scrolled out of the viewport, the content remains in view
-- If the span < standard content width (reduced display):
-  - Only the task title is shown
-  - Hovering for >500 ms temporarily expands the card to standard content width
+- If the span < standard major-axis size (reduced display):
+  - The info section is omitted when there is insufficient space to display it alongside the title without overlap
+  - Hovering for >500 ms temporarily expands the card to the standard major-axis size (180 px), revealing the info section
   - The expanded card may overlap nearby cards and is rendered on top
+  - **Vertical mode threshold**: insufficient space is determined when the span height is less than 2 × standard minor-axis size (104 px)
 
 ## Date Manipulation via Drag
 
