@@ -247,21 +247,43 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
             <hr className={styles.divider} />
             <p className={styles.sectionTitle}>Settings</p>
 
-            <div className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Default tasks view</span>
-              <div className={styles.radioGroup}>
-                {(['Graph', 'List'] as const).map(v => (
-                  <label key={v} className={styles.radioLabel}>
-                    <input
-                      type="radio"
-                      name="defaultTasksView"
-                      value={v}
-                      checked={defaultTasksView === v}
-                      onChange={() => setDefaultTasksView(v)}
-                    />
-                    <span>{v}</span>
-                  </label>
-                ))}
+            <div className={styles.subGroup}>
+              <span className={styles.subGroupTitle}>General</span>
+
+              <div className={styles.fieldGroup}>
+                <span className={styles.fieldLabel}>Default tasks view</span>
+                <div className={styles.radioGroup}>
+                  {(['Graph', 'List'] as const).map(v => (
+                    <label key={v} className={styles.radioLabel}>
+                      <input
+                        type="radio"
+                        name="defaultTasksView"
+                        value={v}
+                        checked={defaultTasksView === v}
+                        onChange={() => setDefaultTasksView(v)}
+                      />
+                      <span>{v}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <span className={styles.fieldLabel}>Auto-save delay: {autoSaveDelaySeconds}s</span>
+                <div className={styles.sliderRow}>
+                  <span className={styles.sliderValue}>0</span>
+                  <input
+                    type="range"
+                    className={styles.slider}
+                    min={0}
+                    max={10}
+                    step={1}
+                    value={autoSaveDelaySeconds}
+                    onChange={e => setAutoSaveDelaySeconds(Number(e.target.value))}
+                    aria-label="Auto-save delay in seconds"
+                  />
+                  <span className={styles.sliderValue}>10</span>
+                </div>
               </div>
             </div>
 
@@ -308,24 +330,6 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
                     )
                   })}
                 </div>
-              </div>
-            </div>
-
-            <div className={styles.fieldGroup}>
-              <span className={styles.fieldLabel}>Auto-save delay: {autoSaveDelaySeconds}s</span>
-              <div className={styles.sliderRow}>
-                <span className={styles.sliderValue}>0</span>
-                <input
-                  type="range"
-                  className={styles.slider}
-                  min={0}
-                  max={10}
-                  step={1}
-                  value={autoSaveDelaySeconds}
-                  onChange={e => setAutoSaveDelaySeconds(Number(e.target.value))}
-                  aria-label="Auto-save delay in seconds"
-                />
-                <span className={styles.sliderValue}>10</span>
               </div>
             </div>
 

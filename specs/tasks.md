@@ -236,7 +236,7 @@
 [x] T3 - Render current-time indicator line on the mini-map
 
 ## P35 - Settings UI Layout
-[ ] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level
+[x] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level
 
 ## P36 - Task Item Open-End Fade-Out
 [ ] T1 - Replace dashed border on unconstrained sides with a gradient fade-out overlay
