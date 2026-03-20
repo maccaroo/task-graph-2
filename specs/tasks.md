@@ -147,29 +147,29 @@
 ## P19 - Delete Task UI
 [x] T1 - Add delete button to Task Detail panel with inline confirmation
 
-## P19b - Notification Task Selection
+## P20 - Notification Task Selection
 [x] T1 - Clicking a notification selects the task in the active view (graph: opens detail panel; list: scrolls to and highlights row), navigating to the dashboard first if needed
 
-## P19c - Clear Read Notifications
+## P21 - Clear Read Notifications
 [x] T1 - Add DELETE /notifications/read API endpoint to delete all read notifications for the current user
 [x] T2 - Add "Clear Read" button to notification list popup (visible only when read notifications exist)
 
-## P20 - Documentation Views
+## P22 - Documentation Views
 [x] T1 - Build About view (application description, developer info)
 [x] T2 - Build FAQ view
 [x] T3 - Build User Guide view (step-by-step instructions with screenshots)
 
-## P20b - Avatar Persistence
+## P23 - Avatar Persistence
 [x] T1 - Mount Docker volume for avatar storage so uploads persist across redeployments
 
-## P21 - End-to-End Testing
+## P24 - End-to-End Testing
 [x] T1 - E2E: user registration and login flow
 [x] T2 - E2E: create, edit, and delete a task
 [x] T3 - E2E: add and remove task dependencies with constraint validation
 [x] T4 - E2E: task graph drag-and-drop repositioning
 [x] T5 - E2E: real-time notification delivery via WebSocket
 
-## P22 - Task Date Manipulation via Drag
+## P25 - Task Date Manipulation via Drag
 [x] T1 - Snap utility: given a pixel position, resolve nearest snap target (time axis tick or other task's start/end date)
 [x] T2 - Constraint bounds utility: given a task and operation (move/resize-start/resize-end), compute the valid movement corridor from all relationship constraints
 [x] T3 - Full card drag to move task: drag card body shifts both dates by the same delta
@@ -183,7 +183,7 @@
 [x] T11 - Fix: PUT /tasks/{id} validates all existing relationship constraints; returns 422 on violation
 [x] T12 - Fix: end-only task move-drag clamping was off by CARD_WIDTH; extract clampMoveDelta and add enforcement tests for all relationship types
 
-## P23 - Free Anchor Cascade During Drag
+## P26 - Free Anchor Cascade During Drag
 [x] T1 - Add naturalAnchorPx utility: compute implied pixel position for a free (null) anchor based on card rendering
 [x] T2 - Add computeCascadeUpdates: for given new task position, return map of related task IDs → cascaded free anchor pixel positions
 [x] T3 - Consolidate all constraint logic into dragConstraints.ts (remove inline clamping from TaskGraph.tsx)
@@ -192,52 +192,52 @@
 [x] T6 - Tests: naturalAnchorPx for all anchor/task combinations
 [x] T7 - Tests: computeCascadeUpdates for all four relationship types × fixed/free anchor combinations
 
-## P24 - Graph Zoom Controls
+## P27 - Graph Zoom Controls
 [x] T1 - Add zoom in/out buttons and a slider to the graph view toolbar
 [x] T2 - Support mouse-wheel zoom on the graph canvas
 [x] T3 - Restrict zoom-out to at most 20% beyond the end-to-end span of the graph
 
-## P25 - Graph Mini-Map
+## P28 - Graph Mini-Map
 [x] T1 - Build mini-map overlay showing the full graph extent at reduced scale
 [x] T2 - Highlight the currently visible viewport region on the mini-map
 [x] T3 - Click/drag on the mini-map to pan the graph viewport
 
-## P26 - Undo / Redo
+## P29 - Undo / Redo
 [x] T1 - Define command interface (execute / undo) and session-scoped command-history stacks
 [x] T3 - Implement commands for task-position drag
 [x] T4 - Implement commands for task-detail modifications (title, dates, assignee, etc.)
 [x] T5 - Add undo/redo keyboard shortcuts (Ctrl+Z / Ctrl+Y) and toolbar buttons
 [x] T6 - Unit tests: command-stack behaviour and all command types
 
-## P29 - Task Item Info Layout
-[x] T1 - Title always at top; info section (due status + pred/succ counts) always at bottom
-[x] T2 - Horizontal: info bar absolutely positioned spanning full card width so pred/succ reach the physical card edges
-[x] T3 - Vertical: info section as two rows (due status row 1; pred left + succ right row 2)
-[x] T4 - Vertical reduced display: hide info section when both-constrained card height < 2 × standard minor-axis (104 px); hover-expand to full height after 500 ms
+## P30 - Task Graph Layout Fixes
+[x] T1 - Fix relationship widget placement: widgets must always point forwards or backwards relative to the time axis
+[x] T2 - Fix vertical layout task width: match the aspect ratio of tasks in horizontal layout
+[x] T3 - Fix relationship widget interaction: add a gap between widget and task edge; remove grow-on-hover behaviour
 
-## P28 - Vertical View Fixes
+## P31 - Vertical View Fixes
 [x] T1 - Increase vertical task minor-axis (card width) to 2× standard minor-axis (104 px); expand lanes to fill available viewport width
 [x] T2 - Show info section in vertical mode as two rows: due status label on row 1, relationship counters on row 2
 [x] T3 - Fix constrained/unconstrained border styling in vertical mode: start → top edge, end → bottom edge
 [x] T4 - Fix time axis tick labels in vertical mode: always horizontal, wrap long text, must not affect axis width
 
-## P30 - Graph Layout Direction Toggle
+## P32 - Task Item Info Layout
+[x] T1 - Title always at top; info section (due status + pred/succ counts) always at bottom
+[x] T2 - Horizontal: info bar absolutely positioned spanning full card width so pred/succ reach the physical card edges
+[x] T3 - Vertical: info section as two rows (due status row 1; pred left + succ right row 2)
+[x] T4 - Vertical reduced display: hide info section when both-constrained card height < 2 × standard minor-axis (104 px); hover-expand to full height after 500 ms
+
+## P33 - Graph Layout Direction Toggle
 [ ] T1 - Add horizontal/vertical layout direction toggle button to the action panel
 [ ] T2 - Toggle updates the graph immediately and persists the choice to user configuration
 
-## P31 - Mini-Map Visual Polish
+## P34 - Mini-Map Visual Polish
 [ ] T1 - Add styled frame to mini-map (border, rounded corners, semi-transparent background)
 [ ] T2 - Render period bands as faint coloured strips in the mini-map background
 [ ] T3 - Render current-time indicator line on the mini-map
 
-## P32 - Settings UI Layout
+## P35 - Settings UI Layout
 [ ] T1 - Add 'General' section (Default Tasks View, Auto-Save Delay) and align all settings sections at the same indentation level
 
-## P33 - Task Item Open-End Fade-Out
+## P36 - Task Item Open-End Fade-Out
 [ ] T1 - Replace dashed border on unconstrained sides with a gradient fade-out overlay
 [ ] T2 - Ensure fade-out does not obscure task title or info section
-
-## P27 - Task Graph Layout Fixes
-[x] T1 - Fix relationship widget placement: widgets must always point forwards or backwards relative to the time axis
-[x] T2 - Fix vertical layout task width: match the aspect ratio of tasks in horizontal layout
-[x] T3 - Fix relationship widget interaction: add a gap between widget and task edge; remove grow-on-hover behaviour
