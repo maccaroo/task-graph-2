@@ -1,0 +1,1 @@
+- Changing between graph modes is pretty common.  Add a toggle on the action panel.
