@@ -227,8 +227,8 @@
 [x] T4 - Vertical reduced display: hide info section when both-constrained card height < 2 × standard minor-axis (104 px); hover-expand to full height after 500 ms
 
 ## P33 - Graph Layout Direction Toggle
-[ ] T1 - Add horizontal/vertical layout direction toggle button to the action panel
-[ ] T2 - Toggle updates the graph immediately and persists the choice to user configuration
+[x] T1 - Add horizontal/vertical layout direction toggle button to the action panel
+[x] T2 - Toggle updates the graph immediately and persists the choice to user configuration
 
 ## P34 - Mini-Map Visual Polish
 [ ] T1 - Add styled frame to mini-map (border, rounded corners, semi-transparent background)

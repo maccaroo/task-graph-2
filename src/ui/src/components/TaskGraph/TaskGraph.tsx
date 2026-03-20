@@ -9,7 +9,7 @@ import {
   type TaskPriority,
   type TaskStatus,
 } from '../../services/tasks'
-import { getUsers, type UserSummary } from '../../services/users'
+import { getUsers, updateUserConfiguration, type UserConfiguration, type UserSummary } from '../../services/users'
 import { computeDueStatus, DUE_STATUS_LABEL, type DueStatusKey } from '../../utils/taskStatus'
 import { Button } from '../ui'
 import { AddTaskModal } from '../TaskList/AddTaskModal'
@@ -167,7 +167,7 @@ interface TaskGraphProps {
 }
 
 export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
-  const { user } = useCurrentUser()
+  const { user, refresh } = useCurrentUser()
   const config = user?.configuration
   const vertical = config?.timeAxisDirection === 'Vertical'
   const containerRef = useRef<HTMLDivElement>(null)
@@ -936,6 +936,23 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
     await load()
   }, [redoCommand]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleToggleDirection = useCallback(async () => {
+    if (!user) return
+    const newDirection: UserConfiguration['timeAxisDirection'] = vertical ? 'Horizontal' : 'Vertical'
+    const currentPosition = config?.timeAxisPosition ?? 'Top'
+    const newPosition: UserConfiguration['timeAxisPosition'] =
+      newDirection === 'Horizontal'
+        ? (currentPosition === 'Left' || currentPosition === 'Right' ? 'Top' : currentPosition)
+        : (currentPosition === 'Top' || currentPosition === 'Bottom' ? 'Left' : currentPosition)
+    await updateUserConfiguration(user.id, {
+      defaultTasksView: config?.defaultTasksView ?? 'Graph',
+      timeAxisDirection: newDirection,
+      timeAxisPosition: newPosition,
+      autoSaveDelaySeconds: config?.autoSaveDelaySeconds ?? 2,
+    })
+    await refresh()
+  }, [user, vertical, config, refresh])
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       const mod = e.metaKey || e.ctrlKey
@@ -1283,6 +1300,11 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
             onClick={() => setShowOpenEnded(v => !v)}
             title={showOpenEnded ? 'Hide open-ended tasks' : 'Show open-ended tasks'}>
             Open-ended: {showOpenEnded ? 'shown' : 'hidden'}
+          </button>
+          <button className={styles.iconBtn}
+            onClick={() => { void handleToggleDirection() }}
+            title={`Switch to ${vertical ? 'Horizontal' : 'Vertical'} layout`}>
+            {vertical ? 'Horizontal' : 'Vertical'}
           </button>
         </div>
         <div className={styles.actionRight}>
