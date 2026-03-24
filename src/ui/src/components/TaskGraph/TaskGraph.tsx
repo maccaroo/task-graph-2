@@ -44,6 +44,7 @@ import { useCommandHistory } from '../../hooks/useCommandHistory'
 import { positionCommand } from '../../lib/commands/PositionCommand'
 import { updateTaskCommand } from '../../lib/commands/UpdateTaskCommand'
 import { GraphMiniMap } from './GraphMiniMap'
+import { buildHorizontalArrowRoute, buildVerticalArrowRoute } from './arrowRouting'
 import styles from './TaskGraph.module.css'
 
 // ── Types ──────────────────────────────────────────────────────────────────
@@ -374,10 +375,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
         const fromPos = positions.get(rel.relatedTaskId)
         if (!fromPos) continue
 
-        const MIN_SEP = 20
-        let d: string
-        let midX: number
-        let midY: number
+        let route
 
         if (vertical) {
           const fromY = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
@@ -386,16 +384,24 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
             ? toPos.y : toPos.y + (toPos.height ?? CARD_HEIGHT)
           const x1 = fromPos.x + fromPos.width / 2
           const x2 = toPos.x + toPos.width / 2
-          midX = (x1 + x2) / 2
-          if (toY - fromY >= MIN_SEP) {
-            const cy = (fromY + toY) / 2
-            d = `M ${x1} ${fromY} C ${x1} ${cy}, ${x2} ${cy}, ${x2} ${toY}`
-            midY = cy
-          } else {
-            const bypassY = Math.min(fromPos.y, toPos.y) - 50
-            d = `M ${x1} ${fromY} C ${x1} ${bypassY}, ${x2} ${bypassY}, ${x2} ${toY}`
-            midY = (fromY + toY + 6 * bypassY) / 8
-          }
+          route = buildVerticalArrowRoute(
+            x1,
+            fromY,
+            x2,
+            toY,
+            {
+              x: fromPos.x,
+              y: fromPos.y,
+              width: fromPos.width,
+              height: fromPos.height ?? CARD_HEIGHT,
+            },
+            {
+              x: toPos.x,
+              y: toPos.y,
+              width: toPos.width,
+              height: toPos.height ?? CARD_HEIGHT,
+            },
+          )
         } else {
           const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
             ? fromPos.x + fromPos.width : fromPos.x
@@ -403,26 +409,34 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
             ? toPos.x : toPos.x + toPos.width
           const y1 = fromPos.y + CARD_HEIGHT / 2
           const y2 = toPos.y   + CARD_HEIGHT / 2
-          midY = (y1 + y2) / 2
-          if (toX - fromX >= MIN_SEP) {
-            const cx = (fromX + toX) / 2
-            d = `M ${fromX} ${y1} C ${cx} ${y1}, ${cx} ${midY}, ${toX} ${y2}`
-            midX = cx
-          } else {
-            const bypassX = Math.min(fromPos.x, toPos.x) - 50
-            d = `M ${fromX} ${y1} C ${bypassX} ${y1}, ${bypassX} ${midY}, ${toX} ${y2}`
-            midX = (fromX + toX + 6 * bypassX) / 8
-          }
+          route = buildHorizontalArrowRoute(
+            fromX,
+            y1,
+            toX,
+            y2,
+            {
+              x: fromPos.x,
+              y: fromPos.y,
+              width: fromPos.width,
+              height: CARD_HEIGHT,
+            },
+            {
+              x: toPos.x,
+              y: toPos.y,
+              width: toPos.width,
+              height: CARD_HEIGHT,
+            },
+          )
         }
 
         result.push({
           id: `${rel.relatedTaskId}->${task.id}`,
           fromId: rel.relatedTaskId,
           toId: task.id,
-          d,
+          d: route.d,
           dashed: !filteredIds.has(rel.relatedTaskId),
-          midX,
-          midY,
+          midX: route.midX,
+          midY: route.midY,
         })
       }
     }

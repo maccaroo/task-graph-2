@@ -243,6 +243,6 @@
 [x] T2 - Ensure fade-out does not obscure task title or info section
 
 ## P37 - Relationship UX Improvements
-[ ] T1 - Fix relationship arrow routing to prefer direct paths with minimal curvature and no large loops for nearby tasks
+[x] T1 - Fix relationship arrow routing to prefer direct paths with minimal curvature and no large loops for nearby tasks
 [ ] T2 - Add relationship-type visual encoding on arrows (evaluate and implement a clear style system for the 4 relationship types)
 [ ] T3 - Refactor relationship creation widgets to sit within task-item edge margins and prevent overlap/erratic interactions
