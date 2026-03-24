@@ -29,6 +29,8 @@ const BAND_ALPHA: Partial<Record<DueStatusKey, number>> = {
   'upcoming':  0.14,
 }
 
+const DETAIL_PANEL_WIDTH = 320
+
 interface GraphMiniMapProps {
   /** Full canvas dimensions (px). */
   canvasWidth: number
@@ -45,6 +47,8 @@ interface GraphMiniMapProps {
   viewStart: Date
   /** Pixels per day zoom level (for period bands and now-line positioning). */
   pixelsPerDay: number
+  /** Whether the task detail panel is currently open — shifts the mini-map left to avoid overlap. */
+  detailOpen: boolean
 }
 
 /**
@@ -53,7 +57,7 @@ interface GraphMiniMapProps {
  * pans the main viewport to the corresponding position.
  */
 export function GraphMiniMap({
-  canvasWidth, canvasHeight, containerRef, vertical, positions, tasks, viewStart, pixelsPerDay,
+  canvasWidth, canvasHeight, containerRef, vertical, positions, tasks, viewStart, pixelsPerDay, detailOpen,
 }: GraphMiniMapProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
@@ -223,7 +227,11 @@ export function GraphMiniMap({
   return (
     <div
       className={styles.miniMap}
-      style={{ width: MAP_W, height: MAP_H }}
+      style={{
+        width: MAP_W,
+        height: MAP_H,
+        transform: detailOpen ? `translateX(-${DETAIL_PANEL_WIDTH}px)` : 'translateX(0)',
+      }}
       aria-label="Graph mini-map"
       aria-hidden="true"
       role="presentation"

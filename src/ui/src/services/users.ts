@@ -5,6 +5,7 @@ export interface UserConfiguration {
   timeAxisDirection: 'Horizontal' | 'Vertical'
   timeAxisPosition: 'Top' | 'Bottom' | 'Left' | 'Right'
   autoSaveDelaySeconds: number
+  showMiniMap: boolean
 }
 
 export interface User {

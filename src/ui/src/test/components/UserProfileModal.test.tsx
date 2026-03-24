@@ -20,6 +20,7 @@ const mockUser = {
     timeAxisDirection: 'Horizontal' as const,
     timeAxisPosition: 'Top' as const,
     autoSaveDelaySeconds: 2,
+    showMiniMap: true,
   },
 }
 

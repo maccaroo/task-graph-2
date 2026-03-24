@@ -26,4 +26,5 @@ public class UserConfiguration
     public TimeAxisDirection TimeAxisDirection { get; set; } = TimeAxisDirection.Horizontal;
     public TimeAxisPosition TimeAxisPosition { get; set; } = TimeAxisPosition.Top;
     public int AutoSaveDelaySeconds { get; set; } = 2;
+    public bool ShowMiniMap { get; set; } = true;
 }

@@ -4,5 +4,6 @@ public record UserConfigurationResponse(
     string DefaultTasksView,
     string TimeAxisDirection,
     string TimeAxisPosition,
-    int AutoSaveDelaySeconds
+    int AutoSaveDelaySeconds,
+    bool ShowMiniMap
 );

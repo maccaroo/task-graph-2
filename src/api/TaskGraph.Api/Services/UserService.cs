@@ -135,6 +135,7 @@ public class UserService(AppDbContext db, IWebHostEnvironment env) : IUserServic
             TimeAxisDirection = timeAxisDirection,
             TimeAxisPosition = timeAxisPosition,
             AutoSaveDelaySeconds = request.AutoSaveDelaySeconds,
+            ShowMiniMap = request.ShowMiniMap,
         };
 
         await db.SaveChangesAsync();
@@ -147,7 +148,8 @@ public class UserService(AppDbContext db, IWebHostEnvironment env) : IUserServic
                 u.Configuration.DefaultTasksView.ToString(),
                 u.Configuration.TimeAxisDirection.ToString(),
                 u.Configuration.TimeAxisPosition.ToString(),
-                u.Configuration.AutoSaveDelaySeconds));
+                u.Configuration.AutoSaveDelaySeconds,
+                u.Configuration.ShowMiniMap));
 
     private static void ValidateEmail(string email)
     {

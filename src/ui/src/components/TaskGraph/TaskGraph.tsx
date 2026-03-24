@@ -1034,6 +1034,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
       timeAxisDirection: newDirection,
       timeAxisPosition: newPosition,
       autoSaveDelaySeconds: config?.autoSaveDelaySeconds ?? 2,
+      showMiniMap: config?.showMiniMap ?? true,
     })
     await refresh()
   }, [user, vertical, config, refresh])
@@ -1391,16 +1392,19 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
           {(axisPos === 'bottom' || axisPos === 'right') && timeAxisEl}
         </div>
         </div>
-        <GraphMiniMap
-          canvasWidth={canvasWidth}
-          canvasHeight={canvasHeight}
-          containerRef={containerRef}
-          vertical={vertical}
-          positions={positions}
-          tasks={filtered}
-          viewStart={viewStart}
-          pixelsPerDay={pixelsPerDay}
-        />
+        {config?.showMiniMap !== false && (
+          <GraphMiniMap
+            canvasWidth={canvasWidth}
+            canvasHeight={canvasHeight}
+            containerRef={containerRef}
+            vertical={vertical}
+            positions={positions}
+            tasks={filtered}
+            viewStart={viewStart}
+            pixelsPerDay={pixelsPerDay}
+            detailOpen={!!selectedTaskId}
+          />
+        )}
       </div>
 
       <div className={styles.actionPanel}>

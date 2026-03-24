@@ -14,6 +14,7 @@ Configuration is stored as a JSON object:
   "timeAxisDirection": "Horizontal",
   "timeAxisPosition": "Top",
   "autoSaveDelaySeconds": 2,
+  "showMiniMap": true
 }
 ```
 
@@ -69,12 +70,23 @@ When direction is changed, position is automatically reset to a valid value for 
 
 **UI Control**: Radio buttons; incompatible options are disabled based on the current direction
 
+#### Mini-Map Visibility
+
+**Type**: Boolean
+**Default**: true
+**Description**: Whether to show the mini-map navigation overlay in graph view.
+
+**Apply behaviour**: Takes effect **immediately** when toggled.
+
+**UI Control**: Checkbox
+
 ### Behavior Settings
 
 #### UI Grouping
 All settings are presented under named sections at the same visual indentation level:
 - **General** section: Default Tasks View, Auto-Save Delay
 - **Time Axis** section: Time Axis Direction, Time Axis Position
+- **Graph** section: Mini-Map Visibility
 
 Each section has a heading and a subtle separator. No section is indented relative to another.
 

@@ -39,6 +39,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
   const [timeAxisDirection, setTimeAxisDirection] = useState<UserConfiguration['timeAxisDirection']>('Horizontal')
   const [timeAxisPosition, setTimeAxisPosition] = useState<UserConfiguration['timeAxisPosition']>('Top')
   const [autoSaveDelaySeconds, setAutoSaveDelaySeconds] = useState(2)
+  const [showMiniMap, setShowMiniMap] = useState(true)
 
   // Populate form fields when the modal opens.
   // Intentionally NOT re-syncing on every `user` change: a background refresh
@@ -52,6 +53,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
       setTimeAxisDirection(user.configuration.timeAxisDirection)
       setTimeAxisPosition(user.configuration.timeAxisPosition)
       setAutoSaveDelaySeconds(user.configuration.autoSaveDelaySeconds)
+      setShowMiniMap(user.configuration.showMiniMap)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
@@ -65,10 +67,11 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
     }
   }, [open])
 
-  // Immediately persist and apply a config change (direction/position) without waiting for Save.
+  // Immediately persist and apply a config change without waiting for Save.
   async function applyConfigChange(patch: Partial<{
     timeAxisDirection: UserConfiguration['timeAxisDirection']
     timeAxisPosition: UserConfiguration['timeAxisPosition']
+    showMiniMap: boolean
   }>) {
     if (!userId) return
     await updateUserConfiguration(userId, {
@@ -76,9 +79,15 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
       timeAxisDirection,
       timeAxisPosition,
       autoSaveDelaySeconds,
+      showMiniMap,
       ...patch,
     })
     await refresh()
+  }
+
+  async function handleShowMiniMapChange(value: boolean) {
+    setShowMiniMap(value)
+    await applyConfigChange({ showMiniMap: value })
   }
 
   async function handleDirectionChange(newDirection: UserConfiguration['timeAxisDirection']) {
@@ -149,6 +158,7 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
           timeAxisDirection,
           timeAxisPosition,
           autoSaveDelaySeconds,
+          showMiniMap,
         }),
       ])
       await refresh()
@@ -330,6 +340,21 @@ export function UserProfileModal({ open, onClose }: UserProfileModalProps) {
                     )
                   })}
                 </div>
+              </div>
+            </div>
+
+            <div className={styles.subGroup}>
+              <span className={styles.subGroupTitle}>Graph</span>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.radioLabel}>
+                  <input
+                    type="checkbox"
+                    checked={showMiniMap}
+                    onChange={e => { void handleShowMiniMapChange(e.target.checked) }}
+                  />
+                  <span>Show mini-map</span>
+                </label>
               </div>
             </div>
 

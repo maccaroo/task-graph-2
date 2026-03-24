@@ -109,7 +109,7 @@ A floating overlay in the bottom-right corner of the graph canvas shows the enti
   - Clicking anywhere on the mini-map centres the viewport on that point.
   - Dragging on the mini-map pans the viewport continuously.
 - **Position**: Fixed to the bottom-right corner of the canvas container (inside the scrollable area's visible frame, not scrolled with the canvas), with a small margin from the edges.
-- **Visibility**: Always visible when the graph is loaded (no toggle required).
+- **Visibility**: Controlled by the `showMiniMap` configuration setting. When the task detail panel is open, the mini-map shifts left by the panel width with a smooth CSS transition so it stays fully visible without overlapping the panel.
 - **Visual style**: The mini-map has a distinct visual frame — a subtle border, rounded corners, and a semi-transparent background — so it reads as a floating overlay rather than a plain rectangle. Period bands from the time axis are reflected as faint coloured strips in the mini-map background. The current-time indicator line is rendered across the mini-map at the correct scaled position.
 
 
