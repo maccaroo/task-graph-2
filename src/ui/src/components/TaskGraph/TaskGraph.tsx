@@ -5,6 +5,7 @@ import {
   removePredecessor,
   updateTask,
   type CreateTaskData,
+  type RelationshipType,
   type Task,
   type TaskPriority,
   type TaskStatus,
@@ -69,6 +70,13 @@ const MIN_ZOOM = 0.3
 const MAX_ZOOM = 200
 const DEFAULT_ZOOM = 40
 const DRAG_THRESHOLD_PX = 4
+
+const RELATIONSHIP_VISUALS: Record<RelationshipType, { token: string; name: string; color: string }> = {
+  Exclusive: { token: 'EX', name: 'Exclusive', color: '#475569' },
+  HaveStarted: { token: 'HS', name: 'Have started', color: '#2563EB' },
+  HaveCompleted: { token: 'HC', name: 'Have completed', color: '#16A34A' },
+  HandOff: { token: 'HO', name: 'Hand-off', color: '#D97706' },
+}
 
 interface RelationDrag {
   sourceId: string
@@ -149,6 +157,35 @@ function weekStart(d: Date): Date {
   return m
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
+
+function renderRelationshipIcon(type: RelationshipType, x: number, y: number) {
+  switch (type) {
+    case 'Exclusive':
+      return (
+        <g transform={`translate(${x}, ${y})`}>
+          <rect x={-3.2} y={-1.8} width={6.4} height={4.8} rx={1} fill="none" stroke="white" strokeWidth={1.2} />
+          <path d="M -2 -1.8 v -1.2 a 2 2 0 0 1 4 0 v 1.2" fill="none" stroke="white" strokeWidth={1.2} strokeLinecap="round" />
+        </g>
+      )
+    case 'HaveStarted':
+      return <polygon points={`${x - 2.6},${y - 3.6} ${x + 3.6},${y} ${x - 2.6},${y + 3.6}`} fill="white" />
+    case 'HaveCompleted':
+      return <path d={`M ${x - 3.2} ${y} L ${x - 0.8} ${y + 2.6} L ${x + 3.8} ${y - 2.6}`} fill="none" stroke="white" strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" />
+    case 'HandOff':
+      return (
+        <g transform={`translate(${x}, ${y})`} fill="none" stroke="white" strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M -4.2 -1.8 H 1.8" />
+          <path d="M 0.2 -3.4 L 2 -1.8 L 0.2 -0.2" />
+          <path d="M 4.2 1.8 H -1.8" />
+          <path d="M -0.2 3.4 L -2 1.8 L -0.2 0.2" />
+        </g>
+      )
+  }
+}
+
 function wouldCreateCycle(taskMap: Map<string, Task>, newPredId: string, taskId: string): boolean {
   const visited = new Set<string>()
   function dfs(id: string): boolean {
@@ -187,6 +224,7 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
   const [showOpenEnded, setShowOpenEnded] = useState(true)
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null)
   const [selectedRelId, setSelectedRelId] = useState<string | null>(null)
+  const [showRelationshipLegend, setShowRelationshipLegend] = useState(true)
   const [addOpen, setAddOpen] = useState(false)
 
   // Select a task when triggered externally (e.g. notification click)
@@ -367,7 +405,20 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
 
   const arrows = useMemo(() => {
     const filteredIds = new Set(filtered.map(t => t.id))
-    const result: { id: string; fromId: string; toId: string; d: string; dashed: boolean; midX: number; midY: number }[] = []
+    const result: {
+      id: string
+      fromId: string
+      toId: string
+      relType: RelationshipType
+      d: string
+      dashed: boolean
+      midX: number
+      midY: number
+      fromX: number
+      fromY: number
+      toX: number
+      toY: number
+    }[] = []
     for (const task of filtered) {
       const toPos = positions.get(task.id)
       if (!toPos) continue
@@ -402,6 +453,21 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
               height: toPos.height ?? CARD_HEIGHT,
             },
           )
+
+          result.push({
+            id: `${rel.relatedTaskId}->${task.id}`,
+            fromId: rel.relatedTaskId,
+            toId: task.id,
+            relType: rel.type,
+            d: route.d,
+            dashed: !filteredIds.has(rel.relatedTaskId),
+            midX: route.midX,
+            midY: route.midY,
+            fromX: x1,
+            fromY,
+            toX: x2,
+            toY,
+          })
         } else {
           const fromX = (rel.type === 'Exclusive' || rel.type === 'HaveCompleted')
             ? fromPos.x + fromPos.width : fromPos.x
@@ -427,17 +493,22 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
               height: CARD_HEIGHT,
             },
           )
-        }
 
-        result.push({
-          id: `${rel.relatedTaskId}->${task.id}`,
-          fromId: rel.relatedTaskId,
-          toId: task.id,
-          d: route.d,
-          dashed: !filteredIds.has(rel.relatedTaskId),
-          midX: route.midX,
-          midY: route.midY,
-        })
+          result.push({
+            id: `${rel.relatedTaskId}->${task.id}`,
+            fromId: rel.relatedTaskId,
+            toId: task.id,
+            relType: rel.type,
+            d: route.d,
+            dashed: !filteredIds.has(rel.relatedTaskId),
+            midX: route.midX,
+            midY: route.midY,
+            fromX,
+            fromY: y1,
+            toX,
+            toY: y2,
+          })
+        }
       }
     }
     return result
@@ -1091,6 +1162,22 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
       )}
 
       <div className={styles.graphWrapper}>
+        {showRelationshipLegend && (
+          <div className={styles.relationshipLegend} aria-label="Relationship legend">
+            <div className={styles.relationshipLegendTitle}>Relationship legend</div>
+            {Object.entries(RELATIONSHIP_VISUALS).map(([type, visual]) => (
+              <div key={type} className={styles.relationshipLegendItem}>
+                <span className={styles.relationshipColorSwatch} style={{ background: visual.color }} aria-hidden="true" />
+                <svg width="14" height="14" viewBox="0 0 14 14" className={styles.relationshipLegendIcon} aria-hidden="true">
+                  <rect x="0" y="0" width="14" height="14" rx="7" fill={visual.color} />
+                  {renderRelationshipIcon(type as RelationshipType, 4, 7)}
+                  <text x="9" y="7" textAnchor="middle" dominantBaseline="central" fill="white" fontSize="5" fontWeight="700">{visual.token}</text>
+                </svg>
+                <span className={styles.relationshipLegendLabel}>{visual.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div ref={containerRef} className={styles.canvasContainer}>
           <div className={styles.canvas} style={{ width: canvasWidth, height: canvasHeight }} onMouseDown={handleCanvasMouseDown}>
           {(axisPos === 'top' || axisPos === 'left') && timeAxisEl}
@@ -1160,40 +1247,67 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
           <svg className={styles.arrowsSvg} width={canvasWidth} height={canvasHeight}
             style={{
               pointerEvents: 'none',
-              zIndex: selectedRelId ? 20 : (moveDrag || resizeDrag) ? 12 : 1,
+              zIndex: selectedRelId ? 20 : selectedTaskId ? 8 : (moveDrag || resizeDrag) ? 12 : 1,
             }}>
             <defs>
-              <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="var(--color-border-strong)" />
-              </marker>
-              <marker id="arrowhead-highlighted" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-                <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
-              </marker>
+              {Object.entries(RELATIONSHIP_VISUALS).map(([type, visual]) => (
+                <marker key={type} id={`arrowhead-${type}`} markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                  <polygon points="0 0, 8 3, 0 6" fill={visual.color} />
+                </marker>
+              ))}
               <marker id="arrowhead-drag" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
                 <polygon points="0 0, 8 3, 0 6" fill="var(--color-primary)" />
               </marker>
             </defs>
 
             {arrows.map(a => {
+              const visual = RELATIONSHIP_VISUALS[a.relType]
               const relSelected  = a.id === selectedRelId
               const taskHighlight = selectedTaskId !== null && (a.fromId === selectedTaskId || a.toId === selectedTaskId)
               const highlighted  = relSelected || taskHighlight
               const dimmed = !highlighted && (selectedTaskId !== null || selectedRelId !== null)
+
+              const vx = a.toX - a.fromX
+              const vy = a.toY - a.fromY
+              const len = Math.hypot(vx, vy) || 1
+              const nx = -vy / len
+              const ny = vx / len
+              const deleteGap = 20
+              let dx = nx * deleteGap
+              let dy = ny * deleteGap
+              const edgePad = 14
+              if (a.midX + dx < edgePad || a.midX + dx > canvasWidth - edgePad || a.midY + dy < edgePad || a.midY + dy > canvasHeight - edgePad) {
+                dx = -dx
+                dy = -dy
+              }
+              const deleteX = clamp(a.midX + dx, edgePad, canvasWidth - edgePad)
+              const deleteY = clamp(a.midY + dy, edgePad, canvasHeight - edgePad)
+
               return (
                 <g key={a.id}>
                   <path d={a.d} fill="none" stroke="transparent" strokeWidth={12}
                     style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
                     onClick={() => { setSelectedRelId(a.id); setSelectedTaskId(null) }} />
                   <path d={a.d} fill="none"
-                    stroke={highlighted ? 'var(--color-primary)' : 'var(--color-border-strong)'}
+                    stroke={visual.color}
                     strokeWidth={highlighted ? 2.5 : 1.5}
                     strokeDasharray={a.dashed ? '4 4' : undefined}
-                    markerEnd={highlighted ? 'url(#arrowhead-highlighted)' : 'url(#arrowhead)'}
-                    opacity={highlighted ? 1 : dimmed ? 0.2 : 0.6} />
+                    markerEnd={`url(#arrowhead-${a.relType})`}
+                    opacity={highlighted ? 1 : dimmed ? 0.2 : 0.75} />
+
+                  <g transform={`translate(${a.midX}, ${a.midY})`} style={{ pointerEvents: 'none' }} opacity={dimmed ? 0.5 : 1}>
+                    <title>{visual.name}</title>
+                    <rect x={-19} y={-9} width={38} height={18} rx={9} fill={visual.color} stroke="white" strokeWidth={relSelected ? 1.5 : 1} />
+                    {renderRelationshipIcon(a.relType, -9.5, 0)}
+                    <text x={5.5} y={0} textAnchor="middle" dominantBaseline="central" fill="white" fontSize={9.5} fontWeight={700}>
+                      {visual.token}
+                    </text>
+                  </g>
+
                   {relSelected && (
-                    <g transform={`translate(${a.midX}, ${a.midY})`}
+                    <g transform={`translate(${deleteX}, ${deleteY})`}
                       style={{ pointerEvents: 'all', cursor: 'pointer' }}
-                      onClick={() => handleDeleteRelationship(a.id)}
+                      onClick={(e) => { e.stopPropagation(); void handleDeleteRelationship(a.id) }}
                       aria-label="Remove relationship">
                       <circle r={10} fill="var(--color-danger)" />
                       <text textAnchor="middle" dominantBaseline="central"
@@ -1311,6 +1425,12 @@ export function TaskGraph({ selectTaskId, onTaskSelected }: TaskGraphProps) {
           <button className={`${styles.iconBtn} ${filtersOpen ? styles.iconBtnActive : ''}`}
             onClick={() => setFiltersOpen(v => !v)} aria-expanded={filtersOpen} title="Toggle filters">
             Filters {activeFilterCount > 0 && <span className={styles.badge}>{activeFilterCount}</span>}
+          </button>
+          <button className={`${styles.iconBtn} ${showRelationshipLegend ? styles.iconBtnActive : ''}`}
+            onClick={() => setShowRelationshipLegend(v => !v)}
+            title="Toggle relationship legend"
+            aria-pressed={showRelationshipLegend}>
+            Legend
           </button>
           <button className={`${styles.iconBtn} ${!showOpenEnded ? styles.iconBtnActive : ''}`}
             onClick={() => setShowOpenEnded(v => !v)}

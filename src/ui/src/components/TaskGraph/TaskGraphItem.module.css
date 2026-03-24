@@ -15,6 +15,7 @@
   overflow: visible;
   height: 52px;
   box-sizing: border-box;
+  z-index: 2;
 }
 
 /* ── Background layer ─────────────────────────────── */
@@ -215,12 +216,26 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: var(--space-1) var(--space-2);
+  /* 30px left/right clears the 18px widget + 8px edge gap + 4px breathing room */
+  padding: var(--space-1) 30px;
   width: 100%;
   min-width: 0;
   overflow: hidden;
   position: relative;
   z-index: 1; /* above .cardBg (z-index: 0) */
+}
+
+/* Vertical mode: 30px top/bottom clears the 18px widget + 8px edge gap + 4px breathing room */
+.contentV {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 30px var(--space-2);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 /* Wide content (both-constrained, span ≥ CARD_WIDTH):
@@ -229,7 +244,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-2);
+  /* 30px left/right clears the 18px widget + 8px edge gap + 4px breathing room */
+  padding: var(--space-1) 30px;
   width: 180px; /* CARD_WIDTH — mirrors the TS constant */
   min-width: 0;
   flex-shrink: 0;
@@ -395,41 +411,41 @@
   pointer-events: all;
 }
 
-/* Horizontal variants: point backwards/forwards along the horizontal time axis */
+/* Horizontal variants: slim vertical strips inside the card at the start/end edges */
 .widgetStart,
 .widgetEnd {
   top: 50%;
   transform: translateY(-50%);
   width: 18px;
-  height: 42px;
+  height: 42px; /* nearly full card height with minimal top/bottom clearance */
 }
 
 .widgetStart {
-  left: -30px;
+  left: 8px; /* clear of the wake gradient which bleeds 6px into the card */
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
 .widgetEnd {
-  right: -30px;
+  right: 8px; /* clear of the wake gradient which bleeds 6px into the card */
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-/* Vertical variants: point backwards/forwards along the vertical time axis */
+/* Vertical variants: slim horizontal strips inside the card at the top/bottom edges */
 .widgetStartV,
 .widgetEndV {
   left: 50%;
   transform: translateX(-50%);
-  width: 42px;
+  width: 42px; /* nearly full card width with minimal left/right clearance */
   height: 18px;
 }
 
 .widgetStartV {
-  top: -30px;
+  top: 8px; /* clear of the wake gradient which bleeds 6px into the card */
   border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
 .widgetEndV {
-  bottom: -30px;
+  bottom: 8px; /* clear of the wake gradient which bleeds 6px into the card */
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 

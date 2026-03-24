@@ -189,6 +189,10 @@ export function TaskGraphItem({
   // Not applicable in vertical mode (width is fixed at CARD_WIDTH_V).
   const showWideContent = !vertical && bothConstrained && width >= CARD_WIDTH
 
+  const contentClass = showWideContent
+    ? styles.wideContent
+    : vertical ? styles.contentV : styles.content
+
   return (
     <div
       className={classNames}
@@ -259,7 +263,7 @@ export function TaskGraphItem({
 
 
       {/* ── Card content ── */}
-      <div className={showWideContent ? styles.wideContent : styles.content}>
+      <div className={contentClass}>
 
         {/* Title — always at the top */}
         <div className={styles.title} title={task.title}>{task.title}</div>

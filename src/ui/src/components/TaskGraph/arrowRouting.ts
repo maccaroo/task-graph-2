@@ -20,35 +20,12 @@ const MIN_FORWARD_GAP = 16
 const DETOUR_CLEARANCE = 14
 const DETOUR_MAJOR_GAP = 24
 
-function toPath(points: Point[]): string {
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-}
-
-function polylineMidpoint(points: Point[]): { x: number; y: number } {
-  if (points.length < 2) return { x: points[0]?.x ?? 0, y: points[0]?.y ?? 0 }
-
-  let total = 0
-  for (let i = 1; i < points.length; i++) {
-    total += Math.hypot(points[i].x - points[i - 1].x, points[i].y - points[i - 1].y)
+function cubicMidpoint(p0: Point, p1: Point, p2: Point, p3: Point): Point {
+  // Cubic Bezier at t=0.5: (p0 + 3p1 + 3p2 + p3) / 8
+  return {
+    x: (p0.x + 3 * p1.x + 3 * p2.x + p3.x) / 8,
+    y: (p0.y + 3 * p1.y + 3 * p2.y + p3.y) / 8,
   }
-
-  if (total <= 0) return { x: points[0].x, y: points[0].y }
-
-  let walked = 0
-  const target = total / 2
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]
-    const b = points[i]
-    const seg = Math.hypot(b.x - a.x, b.y - a.y)
-    if (walked + seg >= target) {
-      const t = (target - walked) / seg
-      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }
-    }
-    walked += seg
-  }
-
-  const end = points[points.length - 1]
-  return { x: end.x, y: end.y }
 }
 
 function chooseDetourMinor(fromRect: ArrowRect, toRect: ArrowRect, n1: number, n2: number): number {
@@ -67,33 +44,30 @@ export function buildHorizontalArrowRoute(
   fromRect: ArrowRect,
   toRect: ArrowRect,
 ): ArrowRoute {
-  const points: Point[] = [{ x: fromX, y: fromY }]
   const forwardGap = toX - fromX
+  const p0 = { x: fromX, y: fromY }
+  const p3 = { x: toX, y: toY }
+
+  let p1: Point
+  let p2: Point
 
   if (forwardGap >= MIN_FORWARD_GAP) {
-    if (Math.abs(toY - fromY) > 1) {
-      const midX = (fromX + toX) / 2
-      points.push({ x: midX, y: fromY }, { x: midX, y: toY })
-    }
-    points.push({ x: toX, y: toY })
+    const cx = (fromX + toX) / 2
+    p1 = { x: cx, y: fromY }
+    p2 = { x: cx, y: toY }
   } else {
-    const detourY = chooseDetourMinor(fromRect, toRect, fromY, toY)
-
     const leftmostAnchor = Math.min(fromX, toX)
     const sideX = leftmostAnchor - DETOUR_MAJOR_GAP
-    const preTargetX = toX - MIN_FORWARD_GAP
-
-    points.push(
-      { x: sideX, y: fromY },
-      { x: sideX, y: detourY },
-      { x: preTargetX, y: detourY },
-      { x: preTargetX, y: toY },
-      { x: toX, y: toY },
-    )
+    // Keep curves smooth while nudging around the nearest edge side.
+    const detourY = chooseDetourMinor(fromRect, toRect, fromY, toY)
+    const yBlend = (detourY + toY) / 2
+    p1 = { x: sideX, y: fromY }
+    p2 = { x: sideX, y: yBlend }
   }
 
-  const mid = polylineMidpoint(points)
-  return { d: toPath(points), midX: mid.x, midY: mid.y }
+  const d = `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, ${p3.x} ${p3.y}`
+  const mid = cubicMidpoint(p0, p1, p2, p3)
+  return { d, midX: mid.x, midY: mid.y }
 }
 
 export function buildVerticalArrowRoute(
@@ -104,35 +78,33 @@ export function buildVerticalArrowRoute(
   fromRect: ArrowRect,
   toRect: ArrowRect,
 ): ArrowRoute {
-  const points: Point[] = [{ x: fromX, y: fromY }]
   const forwardGap = toY - fromY
+  const p0 = { x: fromX, y: fromY }
+  const p3 = { x: toX, y: toY }
+
+  let p1: Point
+  let p2: Point
 
   if (forwardGap >= MIN_FORWARD_GAP) {
-    if (Math.abs(toX - fromX) > 1) {
-      const midY = (fromY + toY) / 2
-      points.push({ x: fromX, y: midY }, { x: toX, y: midY })
-    }
-    points.push({ x: toX, y: toY })
+    const cy = (fromY + toY) / 2
+    p1 = { x: fromX, y: cy }
+    p2 = { x: toX, y: cy }
   } else {
+    const topAnchor = Math.min(fromY, toY)
+    const sideY = topAnchor - DETOUR_MAJOR_GAP
+
     const left = Math.min(fromRect.x, toRect.x) - DETOUR_CLEARANCE
     const right = Math.max(fromRect.x + fromRect.width, toRect.x + toRect.width) + DETOUR_CLEARANCE
     const leftCost = Math.abs(fromX - left) + Math.abs(toX - left)
     const rightCost = Math.abs(fromX - right) + Math.abs(toX - right)
     const detourX = leftCost <= rightCost ? left : right
+    const xBlend = (detourX + toX) / 2
 
-    const topAnchor = Math.min(fromY, toY)
-    const sideY = topAnchor - DETOUR_MAJOR_GAP
-    const preTargetY = toY - MIN_FORWARD_GAP
-
-    points.push(
-      { x: fromX, y: sideY },
-      { x: detourX, y: sideY },
-      { x: detourX, y: preTargetY },
-      { x: toX, y: preTargetY },
-      { x: toX, y: toY },
-    )
+    p1 = { x: fromX, y: sideY }
+    p2 = { x: xBlend, y: sideY }
   }
 
-  const mid = polylineMidpoint(points)
-  return { d: toPath(points), midX: mid.x, midY: mid.y }
+  const d = `M ${p0.x} ${p0.y} C ${p1.x} ${p1.y}, ${p2.x} ${p2.y}, ${p3.x} ${p3.y}`
+  const mid = cubicMidpoint(p0, p1, p2, p3)
+  return { d, midX: mid.x, midY: mid.y }
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { TaskGraph } from './TaskGraph'
 import * as tasksSvc from '../../services/tasks'
@@ -128,6 +128,19 @@ describe('TaskGraph', () => {
     renderGraph()
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /filters/i })).toBeInTheDocument()
+    })
+  })
+
+  it('shows and hides the relationship legend', async () => {
+    renderGraph()
+    await waitFor(() => {
+      expect(screen.getByLabelText('Relationship legend')).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /legend/i }))
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText('Relationship legend')).not.toBeInTheDocument()
     })
   })
 

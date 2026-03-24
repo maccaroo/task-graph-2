@@ -17,8 +17,8 @@ describe('buildHorizontalArrowRoute', () => {
     )
 
     expect(route.d).toContain('M 100 200')
-    expect(route.d).toContain('L 320 220')
-    expect(route.d).not.toContain('L 76 200')
+    expect(route.d).toContain('C')
+    expect(route.d).not.toContain('Q')
   })
 
   it('uses a short left detour for backward/nearby anchors (no wide loop)', () => {
@@ -31,9 +31,10 @@ describe('buildHorizontalArrowRoute', () => {
       rect(200, 184, 180, 52),
     )
 
-    // nearest-left bypass should stay close to anchors: min(250,240) - 24 = 216
-    expect(route.d).toContain('L 216 210')
-    expect(route.d).not.toContain('L 150 210')
+    // nearest-left bypass should stay close to anchors and remain smooth.
+    expect(route.d).toContain('C')
+    expect(route.d).not.toContain('Q')
+    expect(route.midX).toBeGreaterThan(160)
   })
 })
 
@@ -49,8 +50,8 @@ describe('buildVerticalArrowRoute', () => {
     )
 
     expect(route.d).toContain('M 120 100')
-    expect(route.d).toContain('L 160 320')
-    expect(route.d).not.toContain('L 120 76')
+    expect(route.d).toContain('C')
+    expect(route.d).not.toContain('Q')
   })
 
   it('uses a short upward detour for backward/nearby anchors (no deep loop)', () => {
@@ -63,8 +64,9 @@ describe('buildVerticalArrowRoute', () => {
       rect(120, 200, 104, 180),
     )
 
-    // nearest-up bypass should stay close to anchors: min(260,250) - 24 = 226
-    expect(route.d).toContain('L 160 226')
-    expect(route.d).not.toContain('L 160 150')
+    // nearest-up bypass should stay close to anchors and remain smooth.
+    expect(route.d).toContain('C')
+    expect(route.d).not.toContain('Q')
+    expect(route.midY).toBeGreaterThan(190)
   })
 })
