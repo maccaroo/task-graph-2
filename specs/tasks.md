@@ -250,3 +250,39 @@
 ## P38 - Mini-Map Toggle & Detail Panel Offset
 [x] T1 - Add showMiniMap boolean config setting (default true); persist via API; add toggle to Graph settings section
 [x] T2 - Slide mini-map left by task detail panel width (320 px) when detail panel is open
+
+## P39 - Critical Path View
+[ ] T1 - Add GET /tasks/{id}/critical-path API endpoint returning the ordered chain of predecessor tasks that must complete before the given task
+[ ] T2 - Highlight critical path tasks and their connecting arrows in the graph when a task is selected (toggle button in task detail panel)
+[ ] T3 - Add "Critical Path" toggle button to the task detail panel; clears on deselect
+
+## P40 - Unblock Path View
+[ ] T1 - Add GET /tasks/{id}/unblock-path API endpoint returning all successor tasks that become unblocked once the given task completes
+[ ] T2 - Highlight unblock path tasks and their connecting arrows in the graph when a task is selected (toggle button in task detail panel)
+[ ] T3 - Add "Unblock Path" toggle button to the task detail panel; clears on deselect
+
+## P41 - Slack / Float Display
+[ ] T1 - Compute total float (slack) for each task: earliest the task can start without delaying the project end
+[ ] T2 - Display slack as a faint extension band trailing the task card on the graph (zero slack = no band)
+[ ] T3 - Show slack value in the task detail panel timing section
+
+## P42 - Milestone Tasks
+[ ] T1 - Add task type field to DB (standard | milestone); migration
+[ ] T2 - Extend POST /tasks and PUT /tasks/{id} to accept and persist task type
+[ ] T3 - Render milestone tasks as a diamond/point shape on the graph (no duration bar)
+[ ] T4 - Add task type selector (Standard / Milestone) to task detail panel; hide timing fields when milestone
+[ ] T5 - Enforce zero duration for milestones: start and end dates are the same
+
+## P43 - Repeating Tasks
+[ ] T1 - Add RecurrenceTemplates table (id, title, description, assignee_id, priority, tags, recurrence_rule, end_condition) and RecurrenceInstances join table; migration
+[ ] T2 - Add POST /recurrence-templates (create template + generate initial instances)
+[ ] T3 - Add GET /recurrence-templates, GET /recurrence-templates/{id}, PUT /recurrence-templates/{id}, DELETE /recurrence-templates/{id}
+[ ] T4 - Include recurrence_template_id on tasks so instances are identifiable; GET /tasks returns instances as normal tasks
+[ ] T5 - Build recurrence editor UI (pattern picker: daily/weekly/monthly/custom; end condition: never/date/count)
+[ ] T6 - Render series as a collapsible group on the graph: collapsed shows a single band; expanded shows individual instance cards
+[ ] T7 - Allow per-instance edit/delete without affecting the rest of the series
+
+## P44 - Export / Share
+[ ] T1 - Add "Export" button to the graph toolbar (PNG and PDF options)
+[ ] T2 - Implement PNG export: render current graph canvas (visible area or full extent) to a PNG file download
+[ ] T3 - Implement PDF export: render graph to a paginated PDF file download

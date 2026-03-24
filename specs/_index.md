@@ -11,3 +11,5 @@ Contents:
 - `technology.md` - Contains specifications for the technologies to be used in the implementation of the application, such as the programming language, frameworks, libraries, etc.
 
 - `tasks.md` - Implementation task tracking.
+
+- `issues-and-ideas.md` - Open questions, known issues, and early-stage ideas not yet ready to spec.
