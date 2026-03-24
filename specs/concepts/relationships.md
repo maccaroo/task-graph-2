@@ -44,11 +44,46 @@ A task with no explicit date may still carry an implied position derived from it
 
 ## Graph visualisation
 
-- Relationships are drawn as curved arrows from a predecessor's anchor to a successor's anchor.
+- Relationships are drawn as direct arrows from a predecessor's anchor to a successor's anchor.
+- Routing should prefer the shortest valid path; only a small bend is allowed when needed for readability.
+- For nearby tasks, arrows must not use large detours or sweeping loops.
+- Arrow routing should be deterministic and stable: unchanged task positions produce unchanged arrow paths.
 - Each arrow's arrowhead aligns with the curve's arrival direction (not perpendicular to the card surface).
-- Arrows always arrive at the target anchor from the left (start-side), so the direction of every arrow reads as forward in time.  When the direct path would travel backward or be too short, the path bypasses to the left of both cards before curving back rightward to the target.
+- Arrows always arrive at the target anchor from the backward side relative to the time axis, so direction always reads forward in time.
 - Arrows involving a task outside the current filter set are shown as dashed lines.
 - Arrows connected to the selected task are highlighted.
-- Clicking a relationship line selects it: the line and its two anchor tasks are highlighted, the line renders above all task cards, and a delete button appears at the midpoint of the line allowing the relationship to be removed.
+- Layering rules (z-order):
+  - Default: task cards render above relationship arrows.
+  - Task selected: arrows connected to the selected task render above task cards for the duration of that selection.
+  - Relationship selected: the selected relationship renders above all task cards and all other arrows.
+- Clicking a relationship line selects it: the line and its two anchor tasks are highlighted, and relationship actions become available.
+- Relationship type is encoded on every arrow using a combined style system:
+  - **Icon + badge (primary)**
+    - A compact midpoint badge is rendered on each arrow.
+    - The badge includes a type icon and short token:
+      - Exclusive: lock + `EX`
+      - Have started: play + `HS`
+      - Have completed: check + `HC`
+      - Hand-off: handoff/exchange + `HO`
+    - Badge orientation follows arrow direction and remains legible in both horizontal and vertical graph modes.
+  - **Colour support (secondary)**
+    - Relationship arrows use distinct type colours:
+      - Exclusive: Slate `#475569`
+      - Have started: Blue `#2563EB`
+      - Have completed: Green `#16A34A`
+      - Hand-off: Amber `#D97706`
+    - The arrow stroke and midpoint badge border/background use the mapped type colour.
+    - Meaning must remain unambiguous without colour.
+    - Colour contrast must remain readable on light and dark task-graph backgrounds.
+    - Selected and hover states must preserve type distinction (icon + token always visible).
+  - **Tooltip (tertiary)**
+    - Hovering or focusing the badge shows the full relationship type name.
+- Midpoint interaction and action placement:
+  - The relationship type badge owns the exact visual midpoint of the arrow.
+  - The delete action is shown only when that relationship is selected.
+  - The delete button is rendered adjacent to the midpoint badge (not on top of it), offset from the arrow by a fixed gap.
+  - If the default side overlaps a task card or exits the viewport, the delete button flips to the opposite side.
+  - If both sides are constrained, the delete button shifts along the arrow away from the nearest task until visible.
+  - The badge remains visible while the delete button is shown.
 - A new relationship can be created by dragging an anchor widget of a task onto an anchor widget of another task.
   - Dragging is only permitted when the resulting relationship would be valid.

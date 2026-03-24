@@ -21,7 +21,19 @@ The info section is displayed as two rows at the bottom of the card:
 - Row 2: predecessor count on the left, successor count on the right
 
 ## Anchor widgets
-The task item is rendered with anchor widgets at the backward and forward ends relative to the time axis. In horizontal mode they sit on the left and right edges; in vertical mode they sit on the top and bottom edges. A clear gap separates each widget from the card edge. Widgets are highlighted on hover but do not grow in size.
+The task item is rendered with anchor widgets at the backward and forward ends relative to the time axis. In horizontal mode they sit near the left and right edges; in vertical mode they sit near the top and bottom edges.
+
+Widget placement rules:
+- Widgets are positioned inside the task card boundary, in a dedicated edge margin between the card border and content area.
+- Widgets must never protrude outside the card box.
+- Widget placement must not overlap title or info content.
+- Widgets are highlighted on hover but do not grow in size.
+
+Overlap and interaction rules:
+- When tasks are visually close, each widget remains visually attached to its own task and does not drift between cards.
+- Widgets must keep a minimum hit-target size of 24 x 24 px.
+- If two widget hit areas intersect, pointer targeting is resolved by nearest widget centre; ties resolve to the top-most rendered task.
+- During anchor drag, valid targets are emphasized and invalid targets are suppressed to reduce accidental selection.
 
 These can be used create a relationship between one task and another by dragging an anchor widget from one task to the anchor widget of another.  Once a widget starts being dragged, only target widgets for valid relationships are visible.
 

@@ -16,6 +16,7 @@ The graph panel displays the graph of tasks and their relationships.  It also co
 - Filter panel - At the top of the graph panel.
 - Task detail panel - On the right edge of the graph panel, only when a task is selected.
 - Action panel - At the bottom of the graph panel.
+- Relationship style legend - A compact legend describing relationship type icons/tokens.
 
 
 ### Task items
@@ -35,6 +36,11 @@ The graph canvas fills all available viewport space; lanes do not stretch to fil
 **Vertical**: The time axis runs vertically.  
 
 **Selection**: Clicking a task selects it and opens the task detail panel.  Clicking the canvas background deselects the current task and closes the panel.
+
+**Selection layering behaviour**:
+- By default, task cards render above relationship arrows.
+- While a task is selected, arrows connected to that task render above task cards.
+- While a relationship is selected, that relationship renders above all task cards and all other arrows.
 
 For details of task items, see `task-item.md`.
 
@@ -74,6 +80,23 @@ It contains buttons for:
   - Zoom slider (maps the zoom range logarithmically so small and large zoom levels are equally accessible)
   - Zoom in button (+)
   - Reset zoom button (returns to the default zoom level)
+
+It also includes a relationship-style legend toggle:
+- Show/hide the relationship legend
+- Default state: visible
+
+
+### Relationship Style Legend
+A small legend explains relationship type visual encodings used by graph arrows:
+- Exclusive (lock + `EX`, slate `#475569`)
+- Have started (play + `HS`, blue `#2563EB`)
+- Have completed (check + `HC`, green `#16A34A`)
+- Hand-off (handoff/exchange + `HO`, amber `#D97706`)
+
+Legend requirements:
+- The legend displays icon, short label token, and colour swatch for each type.
+- It must remain readable in both horizontal and vertical graph modes.
+- It must not obstruct task dragging, relationship dragging, or task detail interactions.
 
 
 ### Mini-Map
