@@ -43,7 +43,7 @@ Clicking a sidebar link scrolls to the corresponding section.
 
 ### User Profile & Settings
 - Updating profile info and avatar
-- Configuring default view, time axis, auto-save delay
+- Configuring default view, time axis, auto-save delay, and mini-map visibility
 
 ## Note on Screenshots
 Placeholder image slots are shown with the label "Screenshot coming soon" for each step that would normally include a screenshot.

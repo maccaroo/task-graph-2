@@ -119,10 +119,12 @@ const GUIDE_SECTIONS: GuideSection[] = [
       {
         title: 'Using the mini-map',
         steps: [
-          'The mini-map overlay in the graph corner shows the entire graph at a reduced scale.',
+          'The mini-map overlay in the bottom-right corner of the graph shows the entire graph at a reduced scale.',
           'The highlighted region on the mini-map represents the area currently visible in the main canvas.',
           'Click anywhere on the mini-map to jump the viewport to that location.',
           'Drag on the mini-map to pan the graph viewport continuously.',
+          'When the Task Detail panel is open, the mini-map slides left so it stays visible.',
+          'To hide or show the mini-map, open User Profile → Settings → Graph → Show mini-map.',
         ],
         screenshot: true,
       },
@@ -229,12 +231,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
         screenshot: true,
       },
       {
-        title: 'Configuring default view, time axis, auto-save delay',
+        title: 'Configuring default view, time axis, auto-save delay, and mini-map',
         steps: [
-          'Open your user profile and go to the Settings tab.',
-          'Choose your default tasks view (Graph or List).',
-          'Set the time axis direction (horizontal or vertical) and position.',
-          'Adjust the auto-save delay (0–10 seconds; 0 saves immediately).',
+          'Open your user profile and go to the Settings section.',
+          'Under General: choose your default tasks view (Graph or List) and adjust the auto-save delay (0–10 seconds; 0 saves immediately).',
+          'Under Time Axis: set the direction (horizontal or vertical) and position.',
+          'Under Graph: toggle "Show mini-map" to show or hide the mini-map overlay in the graph view.',
+          'Direction, position, and mini-map changes take effect immediately; default view and auto-save delay are applied on Save.',
         ],
         screenshot: true,
       },

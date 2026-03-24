@@ -29,6 +29,7 @@ Questions use an accordion (expand/collapse) pattern — one item open at a time
 - How do I navigate the graph (pan/zoom)?
 - How do I zoom using the toolbar controls?
 - What is the mini-map?
+- Can I hide the mini-map?
 - How do I reposition a task?
 - How do I adjust a task's dates by dragging?
 - What is the current-time indicator line?

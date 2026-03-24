@@ -76,7 +76,11 @@ const FAQ_DATA: FaqCategory[] = [
       },
       {
         q: 'What is the mini-map?',
-        a: 'The mini-map is a small overlay in the corner of the graph view showing the full graph at a reduced scale. The currently visible area is highlighted. Click or drag anywhere on the mini-map to jump to that part of the graph.',
+        a: 'The mini-map is a small overlay in the bottom-right corner of the graph showing the full graph at a reduced scale. The currently visible area is highlighted. Click or drag anywhere on the mini-map to jump to that part of the graph. When the Task Detail panel is open, the mini-map automatically slides left so it stays visible.',
+      },
+      {
+        q: 'Can I hide the mini-map?',
+        a: 'Yes. Open User Profile → Settings → Graph and uncheck "Show mini-map". The change takes effect immediately.',
       },
       {
         q: 'How do I reposition a task?',
